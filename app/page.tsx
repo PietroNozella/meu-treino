@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 import { MOCK_TREINOS } from "@/lib/mock";
 import {
   criarSessao,
@@ -15,6 +16,8 @@ export default function Home() {
   // Lazy initializer lê localStorage direto: seguro no SSR (store tem
   // try/catch e retorna null no servidor) e evita setState dentro de effect.
   const [ativa, setAtiva] = useState<Sessao | null>(() => sessaoAtiva());
+  const { data } = useSession();
+  const email = data?.user?.email;
   const hoje = new Date().toLocaleDateString("pt-BR", {
     weekday: "short",
     day: "2-digit",
@@ -33,9 +36,22 @@ export default function Home() {
           {hoje} · mock local
         </p>
         <h1 className="text-2xl font-bold">Meu Treino</h1>
-        <p className="text-sm text-zinc-400">
-          Sequência: Upper A → Lower A → Upper B → Lower B
-        </p>
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <p className="text-sm text-zinc-400">
+            Sequência: Upper A → Lower A → Upper B → Lower B
+          </p>
+        </div>
+        {email && (
+          <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2">
+            <span className="truncate text-xs text-zinc-400">{email}</span>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="min-h-9 shrink-0 rounded-lg border border-zinc-700 px-3 text-xs text-zinc-300"
+            >
+              Sair
+            </button>
+          </div>
+        )}
       </header>
 
       {ativa && ativa.status !== "sincronizada" && (

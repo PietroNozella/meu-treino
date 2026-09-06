@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Providers } from "@/components/Providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -39,8 +40,7 @@ export default function RootLayout({
             paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))",
           }}
         >
-          {children}
-        </div>
+          <Providers>{children}</Providers>        </div>
       </body>
     </html>
   );

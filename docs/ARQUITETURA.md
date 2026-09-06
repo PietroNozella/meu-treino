@@ -25,8 +25,8 @@ Next 16.3.4 + React 19 + TS + Tailwind 4 + Vercel. `googleapis` + Auth.js entram
 Uma linha por série válida em `Registros do App`: session_id | iniciado_em | finalizado_em | treino_id | treino_nome | exercicio_nome | ordem_exercicio | serie | carga | reps | rir | obs | carga_ref_snapshot | reps_ref_snapshot | rir_ref_snapshot | proxima_acao_snapshot | app_version.
 Idempotência por `session_id` (uuid no início, snapshot congelado). Nunca marca sincronizada sem 200 do servidor.
 
-## Auth (etapa 5, planejada)
-Auth.js provider Google + `ALLOWED_EMAILS` + middleware em `/` e `/api/*`. Service Account só com acesso à planilha. Segredos só em env, nunca no repo.
+## Auth (implementada)
+NextAuth v4 + provider Google + `ALLOWED_EMAILS` (allowlist). `signIn` nega conta fora da lista; `middleware.ts` (withAuth) protege páginas e `/api/*` e revalida a lista por request — remover o e-mail da lista revoga o acesso. Sessão em cookie httpOnly. Segredos só em env (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `ALLOWED_EMAILS`, `NEXTAUTH_URL` só em prod). Redirects OAuth a cadastrar no Google Cloud: `http://localhost:3000/api/auth/callback/google` e `https://<app>.vercel.app/api/auth/callback/google`.
 
 ## Rodar local
 ```bash
