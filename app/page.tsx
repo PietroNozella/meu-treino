@@ -1,18 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { MOCK_TREINOS } from "@/lib/mock";
 import {
-  criarSessao,
+  criarSessaoDe,
   descartarSessao,
   sessaoAtiva,
 } from "@/lib/store";
-import type { Sessao } from "@/lib/domain";
+import { treinosPromise } from "@/lib/treinos";
+import type { Sessao, Treino } from "@/lib/domain";
 
 export default function Home() {
   const router = useRouter();
+  // Suspende até carregar (planilha ou mock). Sem effect: lint-safe.
+  const { treinos, fonte } = use(treinosPromise());
   // Lazy initializer lê localStorage direto: seguro no SSR (store tem
   // try/catch e retorna null no servidor) e evita setState dentro de effect.
   const [ativa, setAtiva] = useState<Sessao | null>(() => sessaoAtiva());
@@ -24,8 +26,8 @@ export default function Home() {
     month: "2-digit",
   });
 
-  function iniciar(treinoId: (typeof MOCK_TREINOS)[number]["id"]) {
-    const s = criarSessao(treinoId);
+  function iniciar(treino: Treino) {
+    const s = criarSessaoDe(treino);
     router.push(`/treino/${s.treinoId}?sessao=${s.id}`);
   }
 
@@ -33,7 +35,7 @@ export default function Home() {
     <main className="flex flex-col gap-4">
       <header className="pt-2">
         <p className="text-xs uppercase tracking-widest text-zinc-500">
-          {hoje} · mock local
+          {hoje} · {fonte === "planilha" ? "planilha atualizada" : "mock local"}
         </p>
         <h1 className="text-2xl font-bold">Meu Treino</h1>
         <div className="mt-1 flex items-center justify-between gap-2">
@@ -82,10 +84,10 @@ export default function Home() {
       )}
 
       <section className="flex flex-col gap-3">
-        {MOCK_TREINOS.map((t) => (
+        {treinos.map((t) => (
           <button
             key={t.id}
-            onClick={() => iniciar(t.id)}
+            onClick={() => iniciar(t)}
             className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-left active:scale-[0.99]"
           >
             <div className="flex items-center justify-between">
@@ -109,7 +111,9 @@ export default function Home() {
       </section>
 
       <footer className="text-xs text-zinc-600">
-        Dados mockados da planilha real. Nenhum envio ao Sheets nesta etapa.
+        {fonte === "planilha"
+          ? "Prescrição lida da planilha agora. Envio ao Sheets ainda é mock."
+          : "Sem acesso à planilha — usando mock. Nenhum envio ao Sheets nesta etapa."}
       </footer>
     </main>
   );

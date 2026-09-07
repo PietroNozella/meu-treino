@@ -10,8 +10,8 @@ Coletor rápido de séries durante a musculação. Sheets é a fonte de verdade.
 - `Resumo`: painel de contadores + regras. Só leitura.
 - Regra: app NUNCA escreve em Treino/Histórico/Resumo. Escrita futura só em `Registros do App` (append-only), após autorização explícita do diff.
 
-## Stack
-Next 16.3.4 + React 19 + TS + Tailwind 4 + Vercel. `googleapis` + Auth.js entram nas etapas 5–7. Zero libs novas até aqui.
+## Leitura Sheets (implementada)
+`GET /api/treinos` (auth + allowlist) lê `Treino!B:I` e `Histórico!A:L` via Service Account (`googleapis`, somente servidor). `lib/sheets/mapper.ts` detecta blocos por nome (nunca posição), ignora headers/notas e anexa `ultimaObs` com match por treino+exercício, fallback por tokens (divergências tipo "Abdômen na polia" vs "Abdômen polia"). Frontend (`lib/treinos.ts`) tenta a API e cai para o mock se falhar; selo na home indica a fonte. Envs: `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `SPREADSHEET_ID`. Planilha compartilhada com a SA como Leitor; Sheets API ativa no projeto.
 
 ## Estrutura
 - `app/page.tsx`: home, lista treinos, continuar/descartar sessão ativa.

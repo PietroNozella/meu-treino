@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import type { Sessao } from "@/lib/domain";
+import type { Sessao, Treino } from "@/lib/domain";
 import {
   serieFeita,
   sessaoParaRegistros,
   volumeSessao,
 } from "@/lib/domain";
-import { getTreino } from "@/lib/mock";
+import { treinosPromise } from "@/lib/treinos";
 import {
   carregarSessao,
-  criarSessao,
+  criarSessaoDe,
   limparSessaoAtiva,
   salvarSessao,
 } from "@/lib/store";
@@ -77,20 +77,30 @@ function Num({
 export default function TreinoPage() {
   const params = useParams<{ id: string }>();
   const search = useSearchParams();
+  const { treinos } = use(treinosPromise());
+  const treino = treinos.find((t) => t.id === params.id);
+  if (!treino) {
+    return (
+      <main className="pt-8 text-center text-sm text-zinc-400">
+        Treino não encontrado.
+      </main>
+    );
+  }
+  return <Execucao key={treino.id} treino={treino} sessaoParam={search.get("sessao")} />;
+}
+
+function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string | null }) {
   const router = useRouter();
   // Bootstrap síncrono no lazy initializer: seguro no SSR porque o store
   // tem try/catch (retorna null / ignora escrita no servidor) e evita
   // setState dentro de effect.
   const [sessao, setSessao] = useState<Sessao | null>(() => {
-    const sid = search.get("sessao");
-    const treino = getTreino(params.id);
-    if (!treino) return null;
-    if (sid) {
-      const s = carregarSessao(sid);
+    if (sessaoParam) {
+      const s = carregarSessao(sessaoParam);
       if (s) return s;
     }
     try {
-      return criarSessao(treino.id);
+      return criarSessaoDe(treino);
     } catch {
       return null;
     }
@@ -101,7 +111,7 @@ export default function TreinoPage() {
 
   // Garante a URL canônica (?sessao=) sem setState — só navegação.
   useEffect(() => {
-    if (sessao && search.get("sessao") !== sessao.id) {
+    if (sessao && sessaoParam !== sessao.id) {
       router.replace(`/treino/${sessao.treinoId}?sessao=${sessao.id}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
