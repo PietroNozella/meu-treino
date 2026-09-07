@@ -57,6 +57,7 @@ export async function POST(req: Request) {
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Falha ao gravar.";
+    console.error("[api/registros]", msg);
     const status = /403|permiss|permission/i.test(msg) ? 502 : 500;
     return NextResponse.json(
       { error: `Sheets: ${msg}` },

@@ -1,6 +1,8 @@
 "use client";
 
-import { use, useState } from "react";import { useRouter } from "next/navigation";
+import { useState } from "react";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   criarSessaoDe,
@@ -10,10 +12,18 @@ import {
 import { treinosPromise } from "@/lib/treinos";
 import type { Sessao, Treino } from "@/lib/domain";
 
+// Client-only: o fetch relativo de /api/treinos não existe no SSR.
+const ListaTreinos = dynamic(() => import("@/components/ListaTreinos"), {
+  ssr: false,
+  loading: () => (
+    <p className="py-6 text-center text-sm text-zinc-400">
+      Carregando treinos…
+    </p>
+  ),
+});
+
 export default function Home() {
   const router = useRouter();
-  // Suspende até carregar da planilha. Sem effect: lint-safe.
-  const treinos = use(treinosPromise());
   // Lazy initializer lê localStorage direto: seguro no SSR (store tem
   // try/catch e retorna null no servidor) e evita setState dentro de effect.
   const [ativa, setAtiva] = useState<Sessao | null>(() => sessaoAtiva());
@@ -82,32 +92,7 @@ export default function Home() {
         </section>
       )}
 
-      <section className="flex flex-col gap-3">
-        {treinos.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => iniciar(t)}
-            className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-left active:scale-[0.99]"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-semibold">{t.nome}</span>
-              <span className="text-xs text-zinc-500">
-                {t.exercicios.length} exercícios
-              </span>
-            </div>
-            <p className="mt-1 line-clamp-2 text-sm text-zinc-400">
-              {t.exercicios
-                .slice(0, 3)
-                .map((e) => e.nome)
-                .join(" · ")}
-              {" …"}
-            </p>
-            <span className="mt-3 block min-h-11 rounded-lg bg-zinc-100 py-2.5 text-center font-semibold text-zinc-950">
-              Iniciar sessão
-            </span>
-          </button>
-        ))}
-      </section>
+      <ListaTreinos onIniciar={iniciar} />
 
       <footer className="text-xs text-zinc-600">
         Prescrição lida da planilha a cada abertura. Sessão salva local até o envio.

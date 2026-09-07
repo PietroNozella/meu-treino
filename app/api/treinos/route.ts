@@ -31,6 +31,7 @@ export async function GET() {
     return NextResponse.json({ treinos });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Falha ao ler planilha.";
+    console.error("[api/treinos]", msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
