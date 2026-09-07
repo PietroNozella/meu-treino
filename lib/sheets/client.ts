@@ -26,10 +26,22 @@ export function getSheets() {
     );
   }
   const key = normalizarChave(rawKey);
-  const auth = new google.auth.JWT({
+  return { sheets: google.sheets({ version: "v4", auth: new google.auth.JWT({
     email,
     key,
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-  return { sheets: google.sheets({ version: "v4", auth }), spreadsheetId };
+  }) }), spreadsheetId };
+}
+
+// Diagnóstico seguro: só metadados (nunca o conteúdo da chave).
+export function chaveInfo(): string {
+  const raw = process.env.GOOGLE_PRIVATE_KEY ?? "";
+  const t = raw.trim();
+  return (
+    `len=${t.length} ` +
+    `aspas=${t.startsWith('"') && t.endsWith('"')} ` +
+    `tem_begin=${t.includes("BEGIN PRIVATE KEY")} ` +
+    `tem_n_literal=${t.includes("\\n")} ` +
+    `multilinha=${t.includes("\n")}`
+  );
 }

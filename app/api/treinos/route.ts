@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isEmailAllowed } from "@/lib/allowlist";
 import { getSheets } from "@/lib/sheets/client";
+import { chaveInfo } from "@/lib/sheets/client";
 import { anexarUltimasObs, parseTreino } from "@/lib/sheets/mapper";
 
 // Leitura fresca da prescrição + últimas observações. Somente leitura;
@@ -31,7 +32,7 @@ export async function GET() {
     return NextResponse.json({ treinos });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Falha ao ler planilha.";
-    console.error("[api/treinos]", msg);
+    console.error("[api/treinos]", msg, "| chave:", chaveInfo());
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
