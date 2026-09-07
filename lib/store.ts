@@ -33,7 +33,10 @@ export function criarSessaoDe(treino: Treino): Sessao {
 export function salvarSessao(s: Sessao) {
   try {
     localStorage.setItem(PREFIXO + s.id, JSON.stringify(s));
-  } catch {}
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function carregarSessao(id: string): Sessao | null {

@@ -4,8 +4,6 @@ import { use } from "react";
 import { treinosPromise } from "@/lib/treinos";
 import type { Treino } from "@/lib/domain";
 
-// Roda SOMENTE no cliente (importado com ssr:false): aqui o fetch
-// relativo funciona. No SSR quebraria — por isso não fica na página.
 export default function ListaTreinos({
   onIniciar,
 }: {
@@ -14,31 +12,52 @@ export default function ListaTreinos({
   const treinos = use(treinosPromise());
 
   return (
-    <section className="flex flex-col gap-3">
-      {treinos.map((t) => (
-        <button
-          key={t.id}
-          onClick={() => onIniciar(t)}
-          className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-left active:scale-[0.99]"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-semibold">{t.nome}</span>
-            <span className="text-xs text-zinc-500">
-              {t.exercicios.length} exercícios
+    <section aria-labelledby="workouts-heading">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 id="workouts-heading" className="eyebrow">
+          Na sua planilha
+        </h2>
+        <span className="text-xs text-neutral-400">
+          {treinos.length} treinos
+        </span>
+      </div>
+      <div className="flex flex-col gap-2.5">
+        {treinos.map((t, i) => (
+          <button
+            key={t.id}
+            onClick={() => onIniciar(t)}
+            aria-label={`Iniciar ${t.nome}`}
+            className="group flex w-full items-center gap-4 rounded-[22px] border border-neutral-800 bg-[#111111] px-4 py-5 text-left transition-colors hover:border-neutral-500 active:bg-neutral-800"
+          >
+            <span
+              aria-hidden="true"
+              className="text-xl font-light text-neutral-500 tabular-nums"
+            >
+              {String(i + 1).padStart(2, "0")}
             </span>
-          </div>
-          <p className="mt-1 line-clamp-2 text-sm text-zinc-400">
-            {t.exercicios
-              .slice(0, 3)
-              .map((e) => `${e.nome}${e.cargaRef != null ? ` ${e.cargaRef}kg` : ""}`)
-              .join(" · ")}
-            {" …"}
-          </p>
-          <span className="mt-3 block min-h-11 rounded-lg bg-zinc-100 py-2.5 text-center font-semibold text-zinc-950">
-            Iniciar sessão
-          </span>
-        </button>
-      ))}
+            <span className="min-w-0 flex-1">
+              <span className="block text-lg font-medium tracking-tight">
+                {t.nome}
+              </span>
+              <span className="mt-0.5 block text-xs text-neutral-400">
+                {t.exercicios.length} exercícios
+              </span>
+              <span className="mt-2 block truncate text-xs text-neutral-400">
+                {t.exercicios
+                  .slice(0, 3)
+                  .map((e) => e.nome)
+                  .join(" · ")}
+              </span>
+            </span>
+            <span
+              aria-hidden="true"
+              className="text-lg text-neutral-400 group-hover:text-white"
+            >
+              ↗
+            </span>
+          </button>
+        ))}
+      </div>
     </section>
   );
 }

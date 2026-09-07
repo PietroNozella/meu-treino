@@ -21,7 +21,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#09090b",
+  themeColor: "#080808",
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({
@@ -34,15 +35,10 @@ export default function RootLayout({
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="bg-zinc-950 text-zinc-100 antialiased">
-        <div
-          className="mx-auto min-h-dvh w-full max-w-md px-4 pb-10"
-          style={{
-            paddingTop: "max(1rem, env(safe-area-inset-top))",
-            paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))",
-          }}
-        >
-          <Providers>{children}</Providers>        </div>
+      <body className="antialiased">
+        <div className="app-frame">
+          <Providers>{children}</Providers>
+        </div>
       </body>
     </html>
   );

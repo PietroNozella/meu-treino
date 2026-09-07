@@ -1,13 +1,9 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Sessao, Treino } from "@/lib/domain";
-import {
-  serieFeita,
-  sessaoParaRegistros,
-  volumeSessao,
-} from "@/lib/domain";
+import { serieFeita, sessaoParaRegistros, volumeSessao } from "@/lib/domain";
 import { treinosPromise } from "@/lib/treinos";
 import {
   carregarFoco,
@@ -21,30 +17,43 @@ import {
 function Num({
   label,
   value,
-  placeholder,
+  inputMode = "decimal",
   onChange,
 }: {
   label: string;
   value: number | "";
-  placeholder?: string;
+  inputMode?: "decimal" | "numeric";
   onChange: (v: number | "") => void;
 }) {
+  // Preserva o separador decimal enquanto a pessoa ainda está digitando.
+  const [rascunho, setRascunho] = useState<string | null>(null);
+
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-[11px] uppercase tracking-wide text-zinc-500">
-        {label}
-      </span>
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className="text-xs text-neutral-400">{label}</span>
       <input
-        inputMode="decimal"
-        value={value}
-        placeholder={placeholder ?? "–"}
+        inputMode={inputMode}
+        autoComplete="off"
+        value={rascunho ?? value}
+        placeholder="—"
+        onFocus={(e) => {
+          setRascunho(String(value));
+          e.target.select();
+        }}
+        onBlur={() => setRascunho(null)}
         onChange={(e) => {
           const t = e.target.value.replace(",", ".");
-          if (t === "") return onChange("");
+          if (t === "") {
+            setRascunho("");
+            return onChange("");
+          }
           const n = Number(t);
-          if (!Number.isNaN(n)) onChange(n);
+          if (Number.isFinite(n)) {
+            setRascunho(e.target.value);
+            onChange(n);
+          }
         }}
-        className="min-h-14 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-xl font-semibold"
+        className="min-h-11 w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 text-2xl font-medium tabular-nums placeholder:text-neutral-500 focus:border-white"
       />
     </label>
   );
@@ -59,21 +68,25 @@ function RirChips({
   onChange: (v: number | "") => void;
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-[11px] uppercase tracking-wide text-zinc-500">
-        RIR
+    <div
+      role="group"
+      aria-label="RIR (opcional)"
+      className="mt-2 flex items-center justify-between gap-3"
+    >
+      <span className="text-xs text-neutral-400">
+        RIR <span className="text-neutral-400">· opcional</span>
       </span>
-      <span className="flex gap-2">
+      <span className="flex gap-1.5">
         {[0, 1, 2].map((n) => (
           <button
             key={n}
             type="button"
             onClick={() => onChange(value === n ? "" : n)}
             aria-pressed={value === n}
-            className={`min-h-14 flex-1 rounded-lg border text-xl font-semibold ${
+            className={`min-h-11 min-w-11 rounded-full border text-sm font-semibold ${
               value === n
-                ? "border-emerald-500 bg-emerald-500/20 text-emerald-200"
-                : "border-zinc-700 text-zinc-300"
+                ? "border-white bg-white text-black"
+                : "border-neutral-700 text-neutral-300"
             }`}
           >
             {n}
@@ -103,7 +116,13 @@ export default function TreinoClient({
   return <Execucao key={treino.id} treino={treino} sessaoParam={sessaoParam} />;
 }
 
-function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string | null }) {
+function Execucao({
+  treino,
+  sessaoParam,
+}: {
+  treino: Treino;
+  sessaoParam: string | null;
+}) {
   const router = useRouter();
   // Bootstrap síncrono no lazy initializer: seguro no SSR porque o store
   // tem try/catch (retorna null / ignora escrita no servidor) e evita
@@ -119,13 +138,17 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
       return null;
     }
   });
-  const [resumo, setResumo] = useState(false);
+  const [resumo, setResumo] = useState(sessao?.status === "sincronizada");
   const [enviando, setEnviando] = useState(false);
-  const [enviado, setEnviado] = useState(false);
+  const [enviado, setEnviado] = useState(sessao?.status === "sincronizada");
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
   const [obsAberta, setObsAberta] = useState(false);
   const [notasAbertas, setNotasAbertas] = useState(false);
+  const [salvoLocal, setSalvoLocal] = useState<boolean | null>(null);
+  const tituloExercicio = useRef<HTMLHeadingElement>(null);
+  const tituloResumo = useRef<HTMLHeadingElement>(null);
+  const exercicioAtivo = useRef<HTMLButtonElement>(null);
   // Exercício em foco (modo um por vez), persistido por sessão.
   const [foco, setFoco] = useState<number>(() =>
     sessao ? carregarFoco(sessao.id) : 0,
@@ -134,6 +157,7 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
   function irPara(idx: number) {
     if (!sessao) return;
     const n = Math.max(0, Math.min(idx, sessao.exercicios.length - 1));
+    if (n === foco) return;
     setFoco(n);
     salvarFoco(sessao.id, n);
     setObsAberta(false);
@@ -149,8 +173,25 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
   }, [sessao?.id]);
 
   useEffect(() => {
-    if (sessao && !resumo) salvarSessao(sessao);
-  }, [sessao, resumo]);
+    if (!sessao) return;
+    const salvo = salvarSessao(sessao);
+    // O feedback depende do resultado da escrita no armazenamento externo.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSalvoLocal(salvo);
+  }, [sessao]);
+
+  useEffect(() => {
+    if (resumo) {
+      tituloResumo.current?.focus({ preventScroll: true });
+    } else {
+      exercicioAtivo.current?.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+      });
+      tituloExercicio.current?.focus({ preventScroll: true });
+    }
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [foco, resumo]);
 
   const feitas = useMemo(
     () =>
@@ -172,7 +213,11 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
     );
   }
 
-  function patchSerie(exIdx: number, serieIdx: number, patch: Partial<{ carga: number | ""; reps: number | ""; rir: number | "" }>) {
+  function patchSerie(
+    exIdx: number,
+    serieIdx: number,
+    patch: Partial<{ carga: number | ""; reps: number | ""; rir: number | "" }>,
+  ) {
     setSessao((s) => {
       if (!s) return s;
       const exercicios = s.exercicios.map((ex, i) => {
@@ -254,7 +299,11 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
     .filter((e) => e.det);
 
   function textoResumo(): string {
-    const data = (sessao?.iniciadoEm || "").slice(0, 10).split("-").reverse().join("/");
+    const data = (sessao?.iniciadoEm || "")
+      .slice(0, 10)
+      .split("-")
+      .reverse()
+      .join("/");
     const linhas = resumoEx.map(
       (e) => `- ${e.nome}: ${e.det}${e.obs ? ` (${e.obs})` : ""}`,
     );
@@ -284,6 +333,7 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
   const exCompleto = feitasEx === ex.series.length;
 
   async function finalizar() {
+    setCopiado(false);
     const fim = new Date().toISOString();
     setSessao((s) =>
       s ? { ...s, finalizadoEm: fim, status: "pronta_envio" } : s,
@@ -307,9 +357,7 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
       });
       const j: unknown = await r.json().catch(() => ({}));
       if (!r.ok) {
-        throw new Error(
-          (j as { error?: string }).error || `HTTP ${r.status}`,
-        );
+        throw new Error((j as { error?: string }).error || `HTTP ${r.status}`);
       }
       const final = {
         ...payload,
@@ -333,245 +381,405 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
   if (resumo) {
     const registros = sessaoParaRegistros(sessao);
     return (
-      <main className="flex flex-col gap-4 pt-2">
-        <h1 className="text-xl font-bold">Resumo — {sessao.treinoNome}</h1>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-sm">
-          <p>Séries registradas: <strong>{registros.length}</strong></p>
-          <p>Volume válido: <strong>{volumeSessao(sessao).toLocaleString("pt-BR")} kg</strong></p>
-          <p className="mt-1 break-all text-xs text-zinc-500">Sessão: {sessao.id}</p>
-          {pendencias.length > 0 && (
-            <p className="mt-2 text-amber-300">
-              {pendencias.length} série(s) incompleta(s) foram ignoradas no envio.
+      <main className="flex flex-col gap-6 py-3">
+        <header>
+          <p className="eyebrow">{sessao.treinoNome}</p>
+          <h1
+            ref={tituloResumo}
+            tabIndex={-1}
+            className="mt-2 text-3xl font-semibold tracking-tight outline-none"
+          >
+            {enviado ? "Tudo registrado." : "Revise seu registro."}
+          </h1>
+          <p className="mt-2 text-sm text-neutral-400">
+            {enviado
+              ? "Sessão enviada à sua planilha."
+              : "Confira as séries antes de enviar à planilha."}
+          </p>
+        </header>
+
+        <div className="flex items-end justify-between gap-4 border-y border-neutral-800 py-5">
+          <div>
+            <p className="text-4xl font-medium tabular-nums">
+              {registros.length}{" "}
+              <span className="ml-2 text-sm text-neutral-400">
+                séries registradas
+              </span>
             </p>
-          )}
-        </div>
-        {resumoEx.map((e, i) => (
-          <div key={i} className="rounded-lg border border-zinc-800 p-3 text-sm">
-            <div className="flex items-baseline justify-between gap-2">
-              <p className="font-semibold">{e.nome}</p>
-              <p className="shrink-0 text-xs text-zinc-400">{e.vol.toLocaleString("pt-BR")} kg</p>
-            </div>
-            <p className="text-zinc-400">{e.det}{e.obs ? ` · ${e.obs}` : ""}</p>
           </div>
-        ))}
-        <button
-          onClick={copiarResumo}
-          className="min-h-11 rounded-lg border border-zinc-700 text-sm text-zinc-200 active:scale-[0.99]"
-        >
-          {copiado ? "Copiado ✓" : "Copiar resumo"}
-        </button>
+          <p className="text-right text-xs leading-5 text-neutral-400">
+            Volume total
+            <br />
+            <span className="text-sm text-neutral-200 tabular-nums">
+              {volumeSessao(sessao).toLocaleString("pt-BR")} kg
+            </span>
+          </p>
+        </div>
+
+        {pendencias.length > 0 && (
+          <div className="rounded-2xl border border-neutral-700 p-4 text-sm leading-relaxed">
+            <p className="font-medium">
+              {pendencias.length}{" "}
+              {pendencias.length === 1
+                ? "série incompleta"
+                : "séries incompletas"}
+            </p>
+            <p className="mt-1 text-neutral-400">
+              {enviado
+                ? "Somente séries com carga e repetições preenchidas foram enviadas."
+                : "Somente séries com carga e repetições preenchidas serão enviadas."}
+            </p>
+          </div>
+        )}
+
+        {resumoEx.length > 0 ? (
+          <section
+            aria-label="Séries para envio"
+            className="divide-y divide-neutral-800"
+          >
+            {resumoEx.map((e, i) => (
+              <div key={i} className="py-4 first:pt-0">
+                <div className="flex items-start gap-3">
+                  <span aria-hidden="true" className="mt-0.5 text-neutral-400">
+                    ✓
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="font-medium leading-snug">{e.nome}</h2>
+                    <p className="mt-1.5 text-sm leading-relaxed text-neutral-400 tabular-nums">
+                      {e.det}
+                    </p>
+                    <p className="mt-1 text-xs text-neutral-400">
+                      Volume: {e.vol.toLocaleString("pt-BR")} kg
+                    </p>
+                    {e.obs && (
+                      <p className="mt-2 break-words text-sm text-neutral-400">
+                        {e.obs}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </section>
+        ) : (
+          <p className="text-sm text-neutral-400">
+            Nenhuma série completa ainda. Volte ao treino para preencher.
+          </p>
+        )}
+
         {!enviado ? (
-          <>
+          <div className="flex flex-col gap-3">
             {erroEnvio && (
-              <div className="rounded-xl border border-red-900 bg-red-950/50 p-4 text-sm text-red-200">
-                Falha no envio: {erroEnvio}
-                <br />
-                Sessão preservada localmente — tente de novo.
+              <div
+                role="alert"
+                className="rounded-2xl border border-neutral-500 p-4 text-sm leading-relaxed"
+              >
+                <p className="font-semibold">Não foi possível enviar.</p>
+                <p className="mt-1 text-neutral-300">{erroEnvio}</p>
+                <p className="mt-2 text-neutral-400">
+                  {salvoLocal
+                    ? "Registro salvo neste aparelho. Tente novamente."
+                    : "Mantenha esta página aberta e tente novamente."}
+                </p>
               </div>
             )}
+            {salvoLocal === false && (
+              <p role="alert" className="text-sm text-neutral-300">
+                Não foi possível salvar neste aparelho. Mantenha a página aberta
+                até enviar.
+              </p>
+            )}
+            <p className="text-xs text-neutral-400">
+              Destino: sua planilha · aba Registros do App
+            </p>
             <button
               onClick={enviar}
               disabled={enviando || registros.length === 0}
-              className="min-h-12 rounded-xl bg-emerald-500 font-bold text-zinc-950 disabled:opacity-40"
+              className="button-primary w-full"
             >
               {enviando
                 ? "Enviando…"
                 : erroEnvio
-                  ? `Tentar de novo (${registros.length})`
-                  : `Confirmar envio (${registros.length})`}
+                  ? "Tentar enviar novamente"
+                  : `Enviar ${registros.length} ${registros.length === 1 ? "série" : "séries"} à planilha`}
             </button>
-          </>
+            <button
+              disabled={enviando}
+              onClick={() => setResumo(false)}
+              className="button-secondary w-full"
+            >
+              Voltar e ajustar
+            </button>
+          </div>
         ) : (
-          <div className="rounded-xl border border-emerald-800 bg-emerald-950/60 p-4 text-sm text-emerald-200">
-            Enviado para a aba Registros do App. Pode pedir ao ChatGPT para organizar a sessão.
-            <button onClick={() => router.push("/")} className="mt-3 block min-h-11 w-full rounded-lg bg-emerald-500 font-bold text-zinc-950">
-              Voltar ao início
+          <div role="status" className="flex flex-col gap-3">
+            <p className="text-sm text-neutral-300">✓ Envio confirmado.</p>
+            <button
+              onClick={() => router.push("/")}
+              className="button-primary w-full"
+            >
+              Voltar aos treinos
             </button>
           </div>
         )}
-        {!enviado && (
-          <button onClick={() => setResumo(false)} className="min-h-11 rounded-lg border border-zinc-700 text-sm">
-            Voltar e ajustar
-          </button>
-        )}
+        <button
+          onClick={copiarResumo}
+          disabled={registros.length === 0}
+          className="button-quiet w-full"
+        >
+          {copiado ? "Resumo copiado ✓" : "Copiar resumo"}
+        </button>
       </main>
     );
   }
 
   return (
-    <main className="flex flex-col gap-3 pt-2">
-      <header className="sticky top-0 z-10 -mx-4 bg-zinc-950/95 px-4 py-2 backdrop-blur">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">{sessao.treinoNome}</h1>
-            <p className="text-xs text-zinc-500">
-              Ex {fi + 1}/{nEx} · {feitas}/{total} séries · autosave
-            </p>
-          </div>
-          <button onClick={() => router.push("/")} className="min-h-11 rounded-lg border border-zinc-700 px-3 text-sm">
-            Sair
+    <main className="session">
+      <header className="session-header">
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={() => router.push("/")}
+            className="button-quiet -ml-3 px-3"
+            aria-label="Voltar aos treinos"
+          >
+            <span aria-hidden="true">←</span> Treinos
           </button>
+          <p className="text-sm font-medium">{sessao.treinoNome}</p>
+          <span className="text-xs text-neutral-400 tabular-nums">
+            {feitas}/{total} séries
+          </span>
         </div>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-800">
-          <div
-            className="h-full bg-emerald-500 transition-all"
-            style={{ width: total ? `${(feitas / total) * 100}%` : "0%" }}
-          />
-        </div>
-        <nav aria-label="Exercícios" className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
+        <nav
+          aria-label="Exercícios"
+          className="mt-2 flex gap-1.5 overflow-x-auto py-1"
+        >
           {sessao.exercicios.map((x, i) => {
             const ok = x.series.filter(serieFeita).length === x.series.length;
             const ativo = i === fi;
             return (
               <button
                 key={x.id}
+                ref={ativo ? exercicioAtivo : undefined}
                 onClick={() => irPara(i)}
-                aria-label={`${x.ordem}. ${x.nome}`}
-                className={`min-h-11 min-w-11 shrink-0 rounded-lg border text-sm font-bold ${
-                  ativo
-                    ? "border-emerald-500 bg-emerald-500/20 text-emerald-200"
-                    : ok
-                      ? "border-emerald-900 text-emerald-400"
-                      : "border-zinc-800 text-zinc-400"
-                }`}
+                aria-label={`${x.ordem}. ${x.nome}${ok ? ", concluído" : ""}`}
+                aria-current={ativo ? "step" : undefined}
+                className={`min-h-11 min-w-11 shrink-0 rounded-full border text-sm font-medium ${ativo ? "border-white bg-white text-black" : ok ? "border-neutral-500 text-white" : "border-neutral-800 text-neutral-400"}`}
               >
-                {ok && !ativo ? "✓" : x.ordem}
+                {ok && !ativo ? <span aria-hidden="true">✓</span> : x.ordem}
               </button>
             );
           })}
         </nav>
       </header>
 
-      <section key={ex.id} className={`rounded-xl border p-4 ${exCompleto ? "border-emerald-800 bg-zinc-900" : "border-zinc-800 bg-zinc-900"}`}>
-        <div className="flex items-start justify-between gap-2">
-          <h2 className="text-lg font-bold leading-snug">{ex.ordem}. {ex.nome}</h2>
-          <span className={`shrink-0 rounded-full px-2 py-1 text-xs ${exCompleto ? "bg-emerald-500/20 text-emerald-300" : "bg-zinc-800 text-zinc-400"}`}>
-            {exCompleto ? "✓ " : ""}{feitasEx}/{ex.series.length}
+      <section key={ex.id} aria-labelledby="exercise-title" className="mt-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="eyebrow">
+            Exercício {fi + 1} de {nEx}
+          </p>
+          <span className="text-xs text-neutral-400">
+            {exCompleto
+              ? "✓ Concluído"
+              : `${feitasEx} de ${ex.series.length} séries`}
           </span>
         </div>
+        <h1
+          id="exercise-title"
+          ref={tituloExercicio}
+          tabIndex={-1}
+          className="mt-2 text-[26px] leading-tight font-semibold tracking-tight outline-none"
+        >
+          {ex.nome}
+        </h1>
 
-        <div className="mt-2 rounded-lg bg-zinc-950 p-3">
-          <p className="text-lg font-semibold text-zinc-100">
-            {ex.cargaRef ?? "–"}kg <span className="text-zinc-500">·</span> {ex.reps1 ?? "–"}/{ex.reps2 ?? "–"} <span className="text-zinc-500">·</span> RIR {ex.rir1 ?? "–"}/{ex.rir2 ?? "–"}
+        <div className="mt-3 border-l-2 border-neutral-600 pl-3">
+          <p className="text-xs font-medium text-neutral-300">
+            Referência da planilha
           </p>
-          <p className="mt-0.5 text-sm text-zinc-400">
-            {ex.seriesPrevistas}
-            {ex.proximaAcao ? (
-              <span className="font-semibold text-amber-300"> · {ex.proximaAcao}</span>
-            ) : null}
+          <p className="mt-1 text-sm text-neutral-400">
+            {ex.cargaRef != null ? `${ex.cargaRef} kg` : "Carga não informada"}{" "}
+            · {ex.seriesPrevistas}
           </p>
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs leading-5 text-neutral-400 tabular-nums">
+            <span>
+              S1 · {ex.reps1 ?? "—"} reps · RIR {ex.rir1 ?? "—"}
+            </span>
+            <span>
+              S2 · {ex.reps2 ?? "—"} reps · RIR {ex.rir2 ?? "—"}
+            </span>
+          </div>
+          {ex.proximaAcao && (
+            <p className="mt-1 text-sm text-neutral-200">{ex.proximaAcao}</p>
+          )}
         </div>
 
         {ex.ultimaObs && (
-          <div className="mt-2">
+          <div className="mt-1">
             <button
               onClick={() => setNotasAbertas((v) => !v)}
-              className="text-xs text-zinc-400 underline"
+              aria-expanded={notasAbertas}
+              aria-controls="previous-note"
+              className="button-quiet -ml-3 px-3 text-xs"
             >
-              {notasAbertas ? "Ocultar notas" : "Ver notas da última sessão"}
+              {notasAbertas
+                ? "− Ocultar nota anterior"
+                : "+ Nota da última sessão"}
             </button>
-            {notasAbertas && <p className="mt-1 text-xs leading-relaxed text-zinc-400">↳ {ex.ultimaObs}</p>}
+            {notasAbertas && (
+              <p
+                id="previous-note"
+                className="mb-3 border-l border-neutral-700 pl-3 text-sm leading-relaxed text-neutral-400"
+              >
+                {ex.ultimaObs}
+              </p>
+            )}
           </div>
         )}
 
-        <div className="mt-3 flex flex-col gap-4">
-          {ex.series.map((se, serieIdx) => {
-            const refReps = [ex.reps1, ex.reps2][serieIdx];
-            return (
-            <div key={serieIdx} className={`rounded-lg border p-3 ${se.feita ? "border-emerald-800 bg-emerald-950/30" : "border-zinc-800 bg-zinc-950"}`}>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-semibold">Série {serieIdx + 1} {se.feita ? "✓" : ""}</span>
+        <div className="mt-2 flex flex-col gap-3">
+          {ex.series.map((se, serieIdx) => (
+            <fieldset
+              key={serieIdx}
+              aria-label={`Série ${serieIdx + 1}`}
+              className={`min-w-0 rounded-[20px] border px-4 pb-2 ${se.feita ? "border-neutral-500 bg-[#111111]" : "border-neutral-800 bg-[#101010]"}`}
+            >
+              <div className="flex min-h-11 items-center justify-between gap-2">
+                <p className="text-xs font-medium text-neutral-300">
+                  Série {serieIdx + 1}
+                  <span className="ml-2 text-neutral-400">
+                    {se.feita ? "✓ Registrada" : ""}
+                  </span>
+                </p>
                 {ex.series.length > 1 && (
                   <button
                     onClick={() => removerSerie(fi, serieIdx)}
                     aria-label={`Remover série ${serieIdx + 1}`}
-                    className="min-h-9 min-w-9 text-xs text-zinc-500"
+                    className="-mr-2 min-h-11 min-w-11 rounded-full text-lg text-neutral-400"
                   >
-                    ✕
+                    −
                   </button>
                 )}
               </div>
-              <div className="flex flex-col gap-2.5">
+              <div className="grid grid-cols-2 gap-3">
                 <Num
                   label="Carga (kg)"
                   value={se.carga}
-                  placeholder={ex.cargaRef != null ? String(ex.cargaRef) : undefined}
                   onChange={(v) => patchSerie(fi, serieIdx, { carga: v })}
                 />
                 <Num
                   label="Repetições"
+                  inputMode="numeric"
                   value={se.reps}
-                  placeholder={refReps != null ? String(refReps) : undefined}
                   onChange={(v) => patchSerie(fi, serieIdx, { reps: v })}
                 />
-                <RirChips value={se.rir} onChange={(v) => patchSerie(fi, serieIdx, { rir: v })} />
               </div>
-            </div>
-            );
-          })}
+              <RirChips
+                value={se.rir}
+                onChange={(v) => patchSerie(fi, serieIdx, { rir: v })}
+              />
+            </fieldset>
+          ))}
         </div>
 
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-2">
           {ex.series.length < 4 && (
-            <button onClick={() => addSerie(fi)} className="min-h-11 flex-1 rounded-lg border border-dashed border-zinc-700 text-sm text-zinc-300">
+            <button
+              onClick={() => addSerie(fi)}
+              className="button-quiet -ml-3 px-3 text-xs"
+            >
               + Adicionar série
             </button>
           )}
-        </div>
-        <div className="mt-3">
           <button
             onClick={() => setObsAberta((v) => !v)}
-            className="text-xs text-zinc-400 underline"
+            aria-expanded={obsAberta}
+            aria-controls="exercise-note"
+            className="button-quiet px-3 text-xs"
           >
-            {ex.obs ? `Obs: ${ex.obs}` : "Adicionar observação (opcional)"}
+            {obsAberta
+              ? "− Ocultar observação"
+              : ex.obs
+                ? "Editar observação"
+                : "+ Observação"}
           </button>
-          {(obsAberta || ex.obs) && (
-            <input
+        </div>
+        {obsAberta ? (
+          <label
+            id="exercise-note"
+            className="mt-2 block text-xs text-neutral-400"
+          >
+            Observação do exercício (opcional)
+            <textarea
+              rows={3}
               value={ex.obs}
               onChange={(e) =>
                 setSessao((s) =>
-                  s ? { ...s, exercicios: s.exercicios.map((x, i) => (i === fi ? { ...x, obs: e.target.value } : x)) } : s,
+                  s
+                    ? {
+                        ...s,
+                        exercicios: s.exercicios.map((x, i) =>
+                          i === fi ? { ...x, obs: e.target.value } : x,
+                        ),
+                      }
+                    : s,
                 )
               }
-              placeholder="Obs do exercício (opcional)"
-              className="mt-2 min-h-11 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm"
+              placeholder="Algo para lembrar na próxima sessão…"
+              className="mt-2 w-full resize-y rounded-2xl border border-neutral-700 bg-neutral-900 p-3 text-base text-neutral-100"
             />
-          )}
-        </div>
+          </label>
+        ) : ex.obs ? (
+          <p className="mt-1 break-words text-sm leading-relaxed text-neutral-400">
+            {ex.obs}
+          </p>
+        ) : null}
       </section>
 
-      <div className="flex gap-2">
-        <button
-          onClick={() => irPara(fi - 1)}
-          disabled={fi === 0}
-          className="min-h-12 flex-1 rounded-xl border border-zinc-700 font-semibold disabled:opacity-30"
+      <div className="mt-3 flex flex-col items-center gap-1">
+        <p
+          role="status"
+          className="text-center text-xs leading-relaxed text-neutral-400"
         >
-          ← Anterior
-        </button>
-        <button
-          onClick={() => irPara(fi + 1)}
-          disabled={fi === nEx - 1}
-          className="min-h-12 flex-1 rounded-xl border border-zinc-700 font-semibold disabled:opacity-30"
-        >
-          Próximo →
-        </button>
+          {salvoLocal === null
+            ? "Salvando neste aparelho…"
+            : salvoLocal
+              ? "Salvo neste aparelho · ainda não enviado"
+              : "Não foi possível salvar. Mantenha esta página aberta até enviar."}
+        </p>
+        {fi < nEx - 1 && (
+          <button onClick={finalizar} className="button-quiet text-xs">
+            Revisar e encerrar agora
+          </button>
+        )}
       </div>
 
-      <div className="h-20" />
-      <div
-        className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur"
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-      >
-        <div className="mx-auto flex w-full max-w-md items-center gap-3 px-4 pt-2.5">
-          <span className="text-sm text-zinc-400">{feitas}/{total}</span>
-          <button onClick={finalizar} className="min-h-12 flex-1 rounded-xl bg-zinc-100 font-bold text-zinc-950 active:scale-[0.99]">
-            Finalizar
+      <footer className="session-footer">
+        <div className="mx-auto flex w-full max-w-[420px] gap-3">
+          <button
+            onClick={() => irPara(fi - 1)}
+            disabled={fi === 0}
+            className="button-secondary shrink-0"
+          >
+            <span aria-hidden="true">←</span> Anterior
           </button>
+          {fi === nEx - 1 ? (
+            <button
+              onClick={finalizar}
+              className="button-primary min-w-0 flex-1"
+            >
+              Revisar e enviar
+            </button>
+          ) : (
+            <button
+              onClick={() => irPara(fi + 1)}
+              aria-label="Próximo exercício"
+              className="button-primary min-w-0 flex-1"
+            >
+              Próximo <span aria-hidden="true">→</span>
+            </button>
+          )}
         </div>
-      </div>
-      <p className="pb-4 text-center text-xs text-zinc-600">
-        Snapshot congelado no início · id {sessao.id.slice(0, 8)}
-      </p>
+      </footer>
     </main>
   );
 }

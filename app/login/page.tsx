@@ -3,33 +3,42 @@
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import RegistroMark from "@/components/RegistroMark";
 
 function LoginConteudo() {
   const search = useSearchParams();
   const erro = search.get("error");
-  const negado =
-    erro === "AccessDenied" || erro === "OAuthAccountNotLinked";
+  const negado = erro === "AccessDenied" || erro === "OAuthAccountNotLinked";
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-4 text-center">
-      <p className="text-xs uppercase tracking-widest text-zinc-500">
-        Acesso restrito
+    <main className="centered-page items-start py-8">
+      <RegistroMark size={52} />
+      <p className="eyebrow mt-7">Sua planilha, com menos toques</p>
+      <h1 className="mt-3 text-5xl font-semibold tracking-tight">
+        Meu Treino<span className="text-neutral-500">.</span>
+      </h1>
+      <p className="mt-4 max-w-72 text-base leading-relaxed text-neutral-400">
+        Um lugar simples para registrar suas séries e seguir o treino.
       </p>
-      <h1 className="text-2xl font-bold">Meu Treino</h1>
-      <p className="max-w-60 text-sm text-zinc-400">
-        Entre com sua conta Google autorizada para registrar os treinos.
-      </p>
-      {negado && (
-        <p className="max-w-60 rounded-lg border border-red-900 bg-red-950/50 p-3 text-sm text-red-300">
-          Essa conta Google não está autorizada.
+      {erro && (
+        <p
+          role="alert"
+          className="mt-6 w-full rounded-2xl border border-neutral-600 p-4 text-sm text-neutral-300"
+        >
+          {negado
+            ? "Essa conta Google não está autorizada."
+            : "Não foi possível entrar. Tente novamente com sua conta Google."}
         </p>
       )}
       <button
         onClick={() => signIn("google", { callbackUrl: "/" })}
-        className="min-h-12 w-full max-w-60 rounded-xl bg-zinc-100 font-bold text-zinc-950 active:scale-[0.98]"
+        className="button-primary mt-8 w-full"
       >
         Entrar com Google
       </button>
+      <p className="mt-4 w-full text-center text-xs text-neutral-400">
+        Use sua conta Google autorizada.
+      </p>
     </main>
   );
 }

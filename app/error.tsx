@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { limparCacheTreinos } from "@/lib/treinos";
 
 // Boundary global: captura falha de leitura da planilha (e outros erros
 // de render) e oferece retry. Sessão em andamento continua salva no
@@ -17,17 +18,20 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center">
-      <p className="text-xs uppercase tracking-widest text-zinc-500">
-        Algo falhou
-      </p>
-      <h1 className="text-xl font-bold">Não foi possível carregar</h1>
-      <p className="max-w-60 text-sm text-zinc-400">
+    <main className="centered-page gap-4">
+      <p className="eyebrow">Vamos tentar novamente</p>
+      <h1 className="text-3xl font-semibold tracking-tight">
+        Não foi possível carregar.
+      </h1>
+      <p role="alert" className="text-sm leading-relaxed text-neutral-400">
         {error.message || "Verifique a internet e tente de novo."}
       </p>
       <button
-        onClick={() => reset()}
-        className="min-h-12 w-full max-w-60 rounded-xl bg-zinc-100 font-bold text-zinc-950 active:scale-[0.98]"
+        onClick={() => {
+          limparCacheTreinos();
+          reset();
+        }}
+        className="button-primary mt-3 w-full"
       >
         Tentar de novo
       </button>

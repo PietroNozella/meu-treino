@@ -25,14 +25,14 @@ export async function carregarTreinos(): Promise<Treino[]> {
 
 let cache: Promise<Treino[]> | null = null;
 
-// Promise memoizada para uso com `use()` do React 19 (sem effect).
-// Limpa o cache ao rejeitar para o retry refazer o fetch.
+// A Promise rejeitada também precisa permanecer estável para o React exibir o erro.
 export function treinosPromise(): Promise<Treino[]> {
   if (!cache) {
-    cache = carregarTreinos().catch((e: unknown) => {
-      cache = null;
-      throw e;
-    });
+    cache = carregarTreinos();
   }
   return cache;
+}
+
+export function limparCacheTreinos() {
+  cache = null;
 }
