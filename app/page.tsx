@@ -9,6 +9,7 @@ import {
   descartarSessao,
   sessaoAtiva,
 } from "@/lib/store";
+import { serieFeita } from "@/lib/domain";
 import type { Sessao, Treino } from "@/lib/domain";
 
 // Client-only: o fetch relativo de /api/treinos não existe no SSR.
@@ -26,6 +27,8 @@ export default function Home() {
   // Lazy initializer lê localStorage direto: seguro no SSR (store tem
   // try/catch e retorna null no servidor) e evita setState dentro de effect.
   const [ativa, setAtiva] = useState<Sessao | null>(() => sessaoAtiva());
+  // Instantâneo de abertura para o "há Xmin" (estático, sem timer).
+  const [agora] = useState(() => Date.now());
   const { data } = useSession();
   const email = data?.user?.email;
   const hoje = new Date().toLocaleDateString("pt-BR", {
@@ -38,6 +41,14 @@ export default function Home() {
     const s = criarSessaoDe(treino);
     router.push(`/treino/${s.treinoId}?sessao=${s.id}`);
   }
+
+  const ativaSeries = ativa ? ativa.exercicios.flatMap((e) => e.series) : [];
+  const ativaFeitas = ativaSeries.filter(serieFeita).length;
+  const decorrido = ativa
+    ? Math.max(0, Math.floor((agora - new Date(ativa.iniciadoEm).getTime()) / 60000))
+    : 0;
+  const decorridoTxt =
+    decorrido < 1 ? "agora mesmo" : decorrido < 60 ? `há ${decorrido}min` : `há ${Math.floor(decorrido / 60)}h${decorrido % 60 ? ` ${decorrido % 60}min` : ""}`;
 
   return (
     <main className="flex flex-col gap-4">
@@ -68,6 +79,9 @@ export default function Home() {
         <section className="rounded-xl border border-emerald-800 bg-emerald-950/60 p-4">
           <p className="text-sm font-semibold text-emerald-300">
             Sessão em andamento: {ativa.treinoNome}
+          </p>
+          <p className="mt-0.5 text-xs text-emerald-400/80">
+            {ativaFeitas}/{ativaSeries.length} séries · {decorridoTxt}
           </p>
           <div className="mt-3 flex gap-2">
             <button

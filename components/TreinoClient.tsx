@@ -149,6 +149,7 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState(false);
   const [obsAberta, setObsAberta] = useState(false);
   const [notasAbertas, setNotasAbertas] = useState(false);
   // Exercício em foco (modo um por vez), persistido por sessão.
@@ -288,6 +289,55 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
     ex.series.filter((s) => !serieFeita(s)).map(() => ex.nome),
   );
 
+  // Resumo agrupado por exercício (prévia do que será enviado).
+  const resumoEx = sessao.exercicios
+    .map((ex) => {
+      const feitas = ex.series.filter(serieFeita);
+      const vol = feitas.reduce(
+        (a, s) =>
+          a +
+          (typeof s.carga === "number" && typeof s.reps === "number"
+            ? s.carga * s.reps
+            : 0),
+        0,
+      );
+      return {
+        nome: ex.nome,
+        obs: ex.obs,
+        vol,
+        det: feitas
+          .map(
+            (s) =>
+              `${s.carga}×${s.reps}${typeof s.rir === "number" ? ` RIR${s.rir}` : ""}`,
+          )
+          .join(", "),
+      };
+    })
+    .filter((e) => e.det);
+
+  function textoResumo(): string {
+    const data = (sessao?.iniciadoEm || "").slice(0, 10).split("-").reverse().join("/");
+    const linhas = resumoEx.map(
+      (e) => `- ${e.nome}: ${e.det}${e.obs ? ` (${e.obs})` : ""}`,
+    );
+    return `${sessao?.treinoNome} ${data}:\n${linhas.join("\n")}\nVolume total: ${sessao ? volumeSessao(sessao).toLocaleString("pt-BR") : 0} kg`;
+  }
+
+  async function copiarResumo() {
+    const texto = textoResumo();
+    try {
+      await navigator.clipboard.writeText(texto);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = texto;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    setCopiado(true);
+  }
+
   // Exercício em foco (modo um por vez).
   const nEx = sessao.exercicios.length;
   const fi = Math.max(0, Math.min(foco, nEx - 1));
@@ -357,12 +407,21 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
             </p>
           )}
         </div>
-        {registros.map((r, i) => (
+        {resumoEx.map((e, i) => (
           <div key={i} className="rounded-lg border border-zinc-800 p-3 text-sm">
-            <p className="font-semibold">{r.exercicio_nome} · S{r.serie}</p>
-            <p className="text-zinc-400">{r.carga}kg × {r.reps} · RIR {r.rir === null ? "–" : r.rir}{r.obs ? ` · ${r.obs}` : ""}</p>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="font-semibold">{e.nome}</p>
+              <p className="shrink-0 text-xs text-zinc-400">{e.vol.toLocaleString("pt-BR")} kg</p>
+            </div>
+            <p className="text-zinc-400">{e.det}{e.obs ? ` · ${e.obs}` : ""}</p>
           </div>
         ))}
+        <button
+          onClick={copiarResumo}
+          className="min-h-11 rounded-lg border border-zinc-700 text-sm text-zinc-200 active:scale-[0.99]"
+        >
+          {copiado ? "Copiado ✓" : "Copiar resumo"}
+        </button>
         {!enviado ? (
           <>
             {erroEnvio && (

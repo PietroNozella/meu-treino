@@ -30,7 +30,7 @@ export default function ListaTreinos({
           <p className="mt-1 line-clamp-2 text-sm text-zinc-400">
             {t.exercicios
               .slice(0, 3)
-              .map((e) => e.nome)
+              .map((e) => `${e.nome}${e.cargaRef != null ? ` ${e.cargaRef}kg` : ""}`)
               .join(" · ")}
             {" …"}
           </p>
