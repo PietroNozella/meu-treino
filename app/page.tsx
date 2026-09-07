@@ -9,7 +9,6 @@ import {
   descartarSessao,
   sessaoAtiva,
 } from "@/lib/store";
-import { treinosPromise } from "@/lib/treinos";
 import type { Sessao, Treino } from "@/lib/domain";
 
 // Client-only: o fetch relativo de /api/treinos não existe no SSR.

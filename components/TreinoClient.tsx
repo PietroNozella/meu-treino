@@ -10,9 +10,11 @@ import {
 } from "@/lib/domain";
 import { treinosPromise } from "@/lib/treinos";
 import {
+  carregarFoco,
   carregarSessao,
   criarSessaoDe,
   limparSessaoAtiva,
+  salvarFoco,
   salvarSessao,
 } from "@/lib/store";
 
@@ -43,7 +45,7 @@ function Num({
               value === "" ? "" : Math.max(min, +(value - step).toFixed(1)),
             )
           }
-          className="min-h-11 min-w-9 rounded-lg border border-zinc-700 text-lg"
+          className="min-h-12 min-w-11 rounded-lg border border-zinc-700 text-xl"
         >
           −
         </button>
@@ -57,7 +59,7 @@ function Num({
             const n = Number(t);
             if (!Number.isNaN(n)) onChange(n);
           }}
-          className="min-h-11 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-center text-lg font-semibold"
+          className="min-h-12 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-center text-lg font-semibold"
         />
         <button
           type="button"
@@ -65,12 +67,46 @@ function Num({
           onClick={() =>
             onChange(value === "" ? step : +(value + step).toFixed(1))
           }
-          className="min-h-11 min-w-9 rounded-lg border border-zinc-700 text-lg"
+          className="min-h-12 min-w-11 rounded-lg border border-zinc-700 text-xl"
         >
           +
         </button>
       </span>
     </label>
+  );
+}
+
+// RIR em chips de um toque (0–3) + limpar. Mais rápido que stepper no treino.
+function RirChips({
+  value,
+  onChange,
+}: {
+  value: number | "";
+  onChange: (v: number | "") => void;
+}) {
+  return (
+    <div className="flex flex-1 flex-col gap-1">
+      <span className="text-[11px] uppercase tracking-wide text-zinc-500">
+        RIR
+      </span>
+      <span className="flex gap-1">
+        {[0, 1, 2, 3].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(value === n ? "" : n)}
+            aria-pressed={value === n}
+            className={`min-h-12 flex-1 rounded-lg border text-lg font-semibold ${
+              value === n
+                ? "border-emerald-500 bg-emerald-500/20 text-emerald-200"
+                : "border-zinc-700 text-zinc-300"
+            }`}
+          >
+            {n}
+          </button>
+        ))}
+      </span>
+    </div>
   );
 }
 
@@ -113,6 +149,21 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
+  const [obsAberta, setObsAberta] = useState(false);
+  const [notasAbertas, setNotasAbertas] = useState(false);
+  // Exercício em foco (modo um por vez), persistido por sessão.
+  const [foco, setFoco] = useState<number>(() =>
+    sessao ? carregarFoco(sessao.id) : 0,
+  );
+
+  function irPara(idx: number) {
+    if (!sessao) return;
+    const n = Math.max(0, Math.min(idx, sessao.exercicios.length - 1));
+    setFoco(n);
+    salvarFoco(sessao.id, n);
+    setObsAberta(false);
+    setNotasAbertas(false);
+  }
 
   // Garante a URL canônica (?sessao=) sem setState — só navegação.
   useEffect(() => {
@@ -173,8 +224,7 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
     });
   }
 
-  function addSerie(exIdx: number) {
-    setSessao((s) => {
+  function addSerie(exIdx: number) {    setSessao((s) => {
       if (!s) return s;
       const exercicios = s.exercicios.map((ex, i) => {
         if (i !== exIdx || ex.series.length >= 4) return ex;
@@ -197,9 +247,53 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
     });
   }
 
+  function removerSerie(exIdx: number, serieIdx: number) {
+    setSessao((s) => {
+      if (!s) return s;
+      const exercicios = s.exercicios.map((ex, i) => {
+        if (i !== exIdx || ex.series.length <= 1) return ex;
+        return { ...ex, series: ex.series.filter((_, j) => j !== serieIdx) };
+      });
+      return { ...s, exercicios };
+    });
+  }
+
+  // Preenche as séries com os valores de referência (ação explícita —
+  // nada é pré-preenchido além da carga).
+  function usarUltimaSessao(exIdx: number) {
+    setSessao((s) => {
+      if (!s) return s;
+      const exercicios = s.exercicios.map((ex, i) => {
+        if (i !== exIdx) return ex;
+        const refs = [ex.reps1, ex.reps2];
+        const rirs = [ex.rir1, ex.rir2];
+        return {
+          ...ex,
+          series: ex.series.map((se, j) => {
+            const next = {
+              ...se,
+              carga: ex.cargaRef ?? se.carga,
+              reps: refs[j] ?? se.reps,
+              rir: rirs[j] ?? se.rir,
+            };
+            return { ...next, feita: serieFeita(next) };
+          }),
+        };
+      });
+      return { ...s, exercicios };
+    });
+  }
+
   const pendencias = sessao.exercicios.flatMap((ex) =>
     ex.series.filter((s) => !serieFeita(s)).map(() => ex.nome),
   );
+
+  // Exercício em foco (modo um por vez).
+  const nEx = sessao.exercicios.length;
+  const fi = Math.max(0, Math.min(foco, nEx - 1));
+  const ex = sessao.exercicios[fi];
+  const feitasEx = ex.series.filter(serieFeita).length;
+  const exCompleto = feitasEx === ex.series.length;
 
   async function finalizar() {
     const fim = new Date().toISOString();
@@ -308,12 +402,14 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
   }
 
   return (
-    <main className="flex flex-col gap-4 pt-2">
+    <main className="flex flex-col gap-3 pt-2">
       <header className="sticky top-0 z-10 -mx-4 bg-zinc-950/95 px-4 py-2 backdrop-blur">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">{sessao.treinoNome}</h1>
-            <p className="text-xs text-zinc-500">{feitas}/{total} séries · autosave local</p>
+            <p className="text-xs text-zinc-500">
+              Ex {fi + 1}/{nEx} · {feitas}/{total} séries · autosave
+            </p>
           </div>
           <button onClick={() => router.push("/")} className="min-h-11 rounded-lg border border-zinc-700 px-3 text-sm">
             Sair
@@ -325,71 +421,170 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
             style={{ width: total ? `${(feitas / total) * 100}%` : "0%" }}
           />
         </div>
+        <nav aria-label="Exercícios" className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
+          {sessao.exercicios.map((x, i) => {
+            const ok = x.series.filter(serieFeita).length === x.series.length;
+            const ativo = i === fi;
+            return (
+              <button
+                key={x.id}
+                onClick={() => irPara(i)}
+                aria-label={`${x.ordem}. ${x.nome}`}
+                className={`min-h-11 min-w-11 shrink-0 rounded-lg border text-sm font-bold ${
+                  ativo
+                    ? "border-emerald-500 bg-emerald-500/20 text-emerald-200"
+                    : ok
+                      ? "border-emerald-900 text-emerald-400"
+                      : "border-zinc-800 text-zinc-400"
+                }`}
+              >
+                {ok && !ativo ? "✓" : x.ordem}
+              </button>
+            );
+          })}
+        </nav>
       </header>
 
-      {sessao.exercicios.map((ex, exIdx) => {
-        const feitasEx = ex.series.filter(serieFeita).length;
-        return (
-          <section key={ex.id} className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <div className="flex items-start justify-between gap-2">
-              <h2 className="font-semibold leading-snug">{ex.ordem}. {ex.nome}</h2>
-              <span className={`shrink-0 rounded-full px-2 py-1 text-xs ${feitasEx === ex.series.length ? "bg-emerald-500/20 text-emerald-300" : "bg-zinc-800 text-zinc-400"}`}>
-                {feitasEx}/{ex.series.length}
-              </span>
-            </div>
-            <p className="mt-1 text-sm text-zinc-400">
-              Ref: <strong className="text-zinc-200">{ex.cargaRef ?? "–"}kg</strong>
-              {" · "}Última: {ex.reps1 ?? "–"}/{ex.reps2 ?? "–"} · RIR {ex.rir1 ?? "–"}/{ex.rir2 ?? "–"}
-            </p>
-            <p className="text-xs text-zinc-500">{ex.seriesPrevistas}{ex.proximaAcao ? ` · ${ex.proximaAcao}` : ""}</p>
-            {ex.ultimaObs && <p className="mt-1 text-xs text-zinc-500">↳ {ex.ultimaObs}</p>}
+      <section key={ex.id} className={`rounded-xl border p-4 ${exCompleto ? "border-emerald-800 bg-zinc-900" : "border-zinc-800 bg-zinc-900"}`}>
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="text-lg font-bold leading-snug">{ex.ordem}. {ex.nome}</h2>
+          <span className={`shrink-0 rounded-full px-2 py-1 text-xs ${exCompleto ? "bg-emerald-500/20 text-emerald-300" : "bg-zinc-800 text-zinc-400"}`}>
+            {exCompleto ? "✓ " : ""}{feitasEx}/{ex.series.length}
+          </span>
+        </div>
 
-            <div className="mt-3 flex flex-col gap-3">
-              {ex.series.map((se, serieIdx) => (
-                <div key={serieIdx} className={`rounded-lg border p-3 ${se.feita ? "border-emerald-800 bg-emerald-950/30" : "border-zinc-800 bg-zinc-950"}`}>
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-semibold">Série {serieIdx + 1} {se.feita ? "✓" : ""}</span>
-                    {serieIdx > 0 && (
-                      <button onClick={() => repetirAnterior(exIdx, serieIdx)} className="text-xs text-emerald-300 underline">
-                        Repetir anterior
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Num label="Carga kg" value={se.carga} step={1} min={0} onChange={(v) => patchSerie(exIdx, serieIdx, { carga: v })} />
-                    <Num label="Reps" value={se.reps} step={1} min={0} onChange={(v) => patchSerie(exIdx, serieIdx, { reps: v })} />
-                    <Num label="RIR" value={se.rir} step={1} min={0} onChange={(v) => patchSerie(exIdx, serieIdx, { rir: v })} />
-                  </div>
-                </div>
-              ))}
-            </div>
+        <div className="mt-2 rounded-lg bg-zinc-950 p-3">
+          <p className="text-lg font-semibold text-zinc-100">
+            {ex.cargaRef ?? "–"}kg <span className="text-zinc-500">·</span> {ex.reps1 ?? "–"}/{ex.reps2 ?? "–"} <span className="text-zinc-500">·</span> RIR {ex.rir1 ?? "–"}/{ex.rir2 ?? "–"}
+          </p>
+          <p className="mt-0.5 text-sm text-zinc-400">
+            {ex.seriesPrevistas}
+            {ex.proximaAcao ? (
+              <span className="font-semibold text-amber-300"> · {ex.proximaAcao}</span>
+            ) : null}
+          </p>
+        </div>
 
-            <div className="mt-3 flex gap-2">
-              {ex.series.length < 4 && (
-                <button onClick={() => addSerie(exIdx)} className="min-h-10 flex-1 rounded-lg border border-dashed border-zinc-700 text-sm text-zinc-300">
-                  + Adicionar série
-                </button>
-              )}
+        <button
+          onClick={() => usarUltimaSessao(fi)}
+          className="mt-2 min-h-11 w-full rounded-lg border border-emerald-800 bg-emerald-950/40 px-3 text-sm font-semibold text-emerald-200 active:scale-[0.99]"
+        >
+          Usar última sessão
+        </button>
+
+        {ex.ultimaObs && (
+          <div className="mt-2">
+            <button
+              onClick={() => setNotasAbertas((v) => !v)}
+              className="text-xs text-zinc-400 underline"
+            >
+              {notasAbertas ? "Ocultar notas" : "Ver notas da última sessão"}
+            </button>
+            {notasAbertas && <p className="mt-1 text-xs leading-relaxed text-zinc-400">↳ {ex.ultimaObs}</p>}
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-col gap-3">
+          {ex.series.map((se, serieIdx) => (
+            <div key={serieIdx} className={`rounded-lg border p-3 ${se.feita ? "border-emerald-800 bg-emerald-950/30" : "border-zinc-800 bg-zinc-950"}`}>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-sm font-semibold">Série {serieIdx + 1} {se.feita ? "✓" : ""}</span>
+                <span className="flex gap-3">
+                  {serieIdx > 0 && (
+                    <button onClick={() => repetirAnterior(fi, serieIdx)} className="min-h-9 text-xs text-emerald-300 underline">
+                      Repetir anterior
+                    </button>
+                  )}
+                  {ex.series.length > 1 && (
+                    <button
+                      onClick={() => removerSerie(fi, serieIdx)}
+                      aria-label={`Remover série ${serieIdx + 1}`}
+                      className="min-h-9 min-w-9 text-xs text-zinc-500"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Num label="Carga kg" value={se.carga} step={1} min={0} onChange={(v) => patchSerie(fi, serieIdx, { carga: v })} />
+                <Num label="Reps" value={se.reps} step={1} min={0} onChange={(v) => patchSerie(fi, serieIdx, { reps: v })} />
+                <RirChips value={se.rir} onChange={(v) => patchSerie(fi, serieIdx, { rir: v })} />
+              </div>
+              <button
+                onClick={() =>
+                  patchSerie(fi, serieIdx, {
+                    carga: se.carga === "" ? 2.5 : +(se.carga + 2.5).toFixed(1),
+                  })
+                }
+                className="mt-2 min-h-9 rounded-lg border border-zinc-800 px-3 text-xs text-zinc-300"
+              >
+                +2,5 kg
+              </button>
             </div>
+          ))}
+        </div>
+
+        <div className="mt-3 flex gap-2">
+          {ex.series.length < 4 && (
+            <button onClick={() => addSerie(fi)} className="min-h-11 flex-1 rounded-lg border border-dashed border-zinc-700 text-sm text-zinc-300">
+              + Adicionar série
+            </button>
+          )}
+        </div>
+        <div className="mt-3">
+          <button
+            onClick={() => setObsAberta((v) => !v)}
+            className="text-xs text-zinc-400 underline"
+          >
+            {ex.obs ? `Obs: ${ex.obs}` : "Adicionar observação (opcional)"}
+          </button>
+          {(obsAberta || ex.obs) && (
             <input
               value={ex.obs}
               onChange={(e) =>
                 setSessao((s) =>
-                  s ? { ...s, exercicios: s.exercicios.map((x, i) => (i === exIdx ? { ...x, obs: e.target.value } : x)) } : s,
+                  s ? { ...s, exercicios: s.exercicios.map((x, i) => (i === fi ? { ...x, obs: e.target.value } : x)) } : s,
                 )
               }
               placeholder="Obs do exercício (opcional)"
-              className="mt-3 min-h-11 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm"
+              className="mt-2 min-h-11 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm"
             />
-          </section>
-        );
-      })}
+          )}
+        </div>
+      </section>
 
-      <button onClick={finalizar} className="min-h-12 rounded-xl bg-zinc-100 font-bold text-zinc-950">
-        Finalizar · {feitas}/{total}
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={() => irPara(fi - 1)}
+          disabled={fi === 0}
+          className="min-h-12 flex-1 rounded-xl border border-zinc-700 font-semibold disabled:opacity-30"
+        >
+          ← Anterior
+        </button>
+        <button
+          onClick={() => irPara(fi + 1)}
+          disabled={fi === nEx - 1}
+          className="min-h-12 flex-1 rounded-xl border border-zinc-700 font-semibold disabled:opacity-30"
+        >
+          Próximo →
+        </button>
+      </div>
+
+      <div className="h-20" />
+      <div
+        className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
+        <div className="mx-auto flex w-full max-w-md items-center gap-3 px-4 pt-2.5">
+          <span className="text-sm text-zinc-400">{feitas}/{total}</span>
+          <button onClick={finalizar} className="min-h-12 flex-1 rounded-xl bg-zinc-100 font-bold text-zinc-950 active:scale-[0.99]">
+            Finalizar
+          </button>
+        </div>
+      </div>
       <p className="pb-4 text-center text-xs text-zinc-600">
-        Snapshot da prescrição congelado no início · id {sessao.id.slice(0, 8)}
+        Snapshot congelado no início · id {sessao.id.slice(0, 8)}
       </p>
     </main>
   );

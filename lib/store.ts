@@ -7,6 +7,7 @@ import { novaSerie } from "./domain";
 
 const PREFIXO = "meu-treino:sessao:";
 const ATIVA = "meu-treino:sessao-ativa";
+const FOCO = "meu-treino:foco:";
 
 export function criarSessaoDe(treino: Treino): Sessao {
   const sessao: Sessao = {
@@ -62,6 +63,22 @@ export function limparSessaoAtiva() {
 export function descartarSessao(id: string) {
   try {
     localStorage.removeItem(PREFIXO + id);
+    localStorage.removeItem(FOCO + id);
     if (localStorage.getItem(ATIVA) === id) localStorage.removeItem(ATIVA);
   } catch {}
+}
+
+export function salvarFoco(sessaoId: string, idx: number) {
+  try {
+    localStorage.setItem(FOCO + sessaoId, String(idx));
+  } catch {}
+}
+
+export function carregarFoco(sessaoId: string): number {
+  try {
+    const v = Number(localStorage.getItem(FOCO + sessaoId));
+    return Number.isInteger(v) && v >= 0 ? v : 0;
+  } catch {
+    return 0;
+  }
 }
