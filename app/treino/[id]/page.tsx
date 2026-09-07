@@ -108,6 +108,7 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
   const [resumo, setResumo] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null);
 
   // Garante a URL canônica (?sessao=) sem setState — só navegação.
   useEffect(() => {
@@ -204,25 +205,43 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
     setResumo(true);
   }
 
-  async function enviarMock() {
+  async function enviar() {
     if (!sessao) return;
     setEnviando(true);
-    await new Promise((r) => setTimeout(r, 800));
-    const registros = sessaoParaRegistros({
+    setErroEnvio(null);
+    const payload = {
       ...sessao,
       finalizadoEm: sessao.finalizadoEm ?? new Date().toISOString(),
-    });
-    console.log("[mock] registros que iriam ao Sheets:", registros);
-    const final = {
-      ...sessao,
-      finalizadoEm: sessao.finalizadoEm ?? new Date().toISOString(),
-      status: "sincronizada" as const,
     };
-    setSessao(final);
-    salvarSessao(final);
-    limparSessaoAtiva();
-    setEnviando(false);
-    setEnviado(true);
+    try {
+      const r = await fetch("/api/registros", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessao: payload }),
+      });
+      const j: unknown = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        throw new Error(
+          (j as { error?: string }).error || `HTTP ${r.status}`,
+        );
+      }
+      const final = {
+        ...payload,
+        status: "sincronizada" as const,
+      };
+      setSessao(final);
+      salvarSessao(final);
+      limparSessaoAtiva();
+      setEnviado(true);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Falha de rede.";
+      setErroEnvio(msg);
+      const pendente = { ...payload, status: "falha" as const };
+      setSessao(pendente);
+      salvarSessao(pendente);
+    } finally {
+      setEnviando(false);
+    }
   }
 
   if (resumo) {
@@ -247,16 +266,29 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
           </div>
         ))}
         {!enviado ? (
-          <button
-            onClick={enviarMock}
-            disabled={enviando || registros.length === 0}
-            className="min-h-12 rounded-xl bg-emerald-500 font-bold text-zinc-950 disabled:opacity-40"
-          >
-            {enviando ? "Enviando (mock)…" : `Confirmar envio (${registros.length})`}
-          </button>
+          <>
+            {erroEnvio && (
+              <div className="rounded-xl border border-red-900 bg-red-950/50 p-4 text-sm text-red-200">
+                Falha no envio: {erroEnvio}
+                <br />
+                Sessão preservada localmente — tente de novo.
+              </div>
+            )}
+            <button
+              onClick={enviar}
+              disabled={enviando || registros.length === 0}
+              className="min-h-12 rounded-xl bg-emerald-500 font-bold text-zinc-950 disabled:opacity-40"
+            >
+              {enviando
+                ? "Enviando…"
+                : erroEnvio
+                  ? `Tentar de novo (${registros.length})`
+                  : `Confirmar envio (${registros.length})`}
+            </button>
+          </>
         ) : (
           <div className="rounded-xl border border-emerald-800 bg-emerald-950/60 p-4 text-sm text-emerald-200">
-            Envio mock concluído e salvo localmente. Na etapa Sheets, aqui entra o POST real com idempotência por session_id.
+            Enviado para a aba Registros do App. Pode pedir ao ChatGPT para organizar a sessão.
             <button onClick={() => router.push("/")} className="mt-3 block min-h-11 w-full rounded-lg bg-emerald-500 font-bold text-zinc-950">
               Voltar ao início
             </button>
