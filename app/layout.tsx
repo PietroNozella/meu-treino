@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
+// App inteiro atrás de login e com dados por request — sem prerender.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Meu Treino",
   description: "Registro rápido de séries durante a musculação",

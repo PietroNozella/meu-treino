@@ -2,8 +2,7 @@
 // Chave única por sessão; índice "ativa" para continuar ao reabrir.
 "use client";
 
-import type { Sessao, Treino, TreinoId } from "./domain";
-import { MOCK_TREINOS } from "./mock";
+import type { Sessao, Treino } from "./domain";
 import { novaSerie } from "./domain";
 
 const PREFIXO = "meu-treino:sessao:";
@@ -28,12 +27,6 @@ export function criarSessaoDe(treino: Treino): Sessao {
     localStorage.setItem(ATIVA, sessao.id);
   } catch {}
   return sessao;
-}
-
-export function criarSessao(treinoId: TreinoId): Sessao {
-  const treino = MOCK_TREINOS.find((t) => t.id === treinoId);
-  if (!treino) throw new Error(`Treino desconhecido: ${treinoId}`);
-  return criarSessaoDe(treino);
 }
 
 export function salvarSessao(s: Sessao) {

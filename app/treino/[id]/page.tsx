@@ -77,7 +77,7 @@ function Num({
 export default function TreinoPage() {
   const params = useParams<{ id: string }>();
   const search = useSearchParams();
-  const { treinos } = use(treinosPromise());
+  const treinos = use(treinosPromise());
   const treino = treinos.find((t) => t.id === params.id);
   if (!treino) {
     return (

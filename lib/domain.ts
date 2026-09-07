@@ -117,7 +117,7 @@ export function sessaoParaRegistros(s: Sessao): RegistroBruto[] {
         reps_ref_snapshot: `${ex.reps1 ?? "-"} / ${ex.reps2 ?? "-"}`,
         rir_ref_snapshot: `${ex.rir1 ?? "-"} / ${ex.rir2 ?? "-"}`,
         proxima_acao_snapshot: ex.proximaAcao ?? "",
-        app_version: "0.1.0-mock",
+        app_version: "0.1.0",
       });
     });
   }

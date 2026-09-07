@@ -2,8 +2,7 @@ import { google } from "googleapis";
 
 // Cliente Google Sheets via Service Account (somente servidor).
 // Envs: GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY (com \n literais),
-// SPREADSHEET_ID. Erro explícito se faltar alguma — nunca cai em mock aqui;
-// fallback para mock vive só no frontend.
+// SPREADSHEET_ID. Erro explícito se faltar alguma.
 export function getSheets() {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");

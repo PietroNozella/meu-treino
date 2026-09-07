@@ -1,7 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
-import { useRouter } from "next/navigation";
+import { use, useState } from "react";import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   criarSessaoDe,
@@ -13,8 +12,8 @@ import type { Sessao, Treino } from "@/lib/domain";
 
 export default function Home() {
   const router = useRouter();
-  // Suspende até carregar (planilha ou mock). Sem effect: lint-safe.
-  const { treinos, fonte } = use(treinosPromise());
+  // Suspende até carregar da planilha. Sem effect: lint-safe.
+  const treinos = use(treinosPromise());
   // Lazy initializer lê localStorage direto: seguro no SSR (store tem
   // try/catch e retorna null no servidor) e evita setState dentro de effect.
   const [ativa, setAtiva] = useState<Sessao | null>(() => sessaoAtiva());
@@ -35,7 +34,7 @@ export default function Home() {
     <main className="flex flex-col gap-4">
       <header className="pt-2">
         <p className="text-xs uppercase tracking-widest text-zinc-500">
-          {hoje} · {fonte === "planilha" ? "planilha atualizada" : "mock local"}
+          {hoje} · planilha atualizada
         </p>
         <h1 className="text-2xl font-bold">Meu Treino</h1>
         <div className="mt-1 flex items-center justify-between gap-2">
@@ -111,9 +110,7 @@ export default function Home() {
       </section>
 
       <footer className="text-xs text-zinc-600">
-        {fonte === "planilha"
-          ? "Prescrição lida da planilha agora. Envio ao Sheets ainda é mock."
-          : "Sem acesso à planilha — usando mock. Nenhum envio ao Sheets nesta etapa."}
+        Prescrição lida da planilha a cada abertura. Sessão salva local até o envio.
       </footer>
     </main>
   );
