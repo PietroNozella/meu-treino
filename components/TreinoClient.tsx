@@ -21,62 +21,36 @@ import {
 function Num({
   label,
   value,
-  step,
-  min,
+  placeholder,
   onChange,
 }: {
   label: string;
   value: number | "";
-  step: number;
-  min: number;
+  placeholder?: string;
   onChange: (v: number | "") => void;
 }) {
   return (
-    <label className="flex flex-1 flex-col gap-1">
+    <label className="flex flex-col gap-1">
       <span className="text-[11px] uppercase tracking-wide text-zinc-500">
         {label}
       </span>
-      <span className="flex items-center gap-1">
-        <button
-          type="button"
-          aria-label={`diminuir ${label}`}
-          onClick={() =>
-            onChange(
-              value === "" ? "" : Math.max(min, +(value - step).toFixed(1)),
-            )
-          }
-          className="min-h-12 min-w-11 rounded-lg border border-zinc-700 text-xl"
-        >
-          −
-        </button>
-        <input
-          inputMode="decimal"
-          value={value}
-          placeholder="–"
-          onChange={(e) => {
-            const t = e.target.value.replace(",", ".");
-            if (t === "") return onChange("");
-            const n = Number(t);
-            if (!Number.isNaN(n)) onChange(n);
-          }}
-          className="min-h-12 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-center text-lg font-semibold"
-        />
-        <button
-          type="button"
-          aria-label={`aumentar ${label}`}
-          onClick={() =>
-            onChange(value === "" ? step : +(value + step).toFixed(1))
-          }
-          className="min-h-12 min-w-11 rounded-lg border border-zinc-700 text-xl"
-        >
-          +
-        </button>
-      </span>
+      <input
+        inputMode="decimal"
+        value={value}
+        placeholder={placeholder ?? "–"}
+        onChange={(e) => {
+          const t = e.target.value.replace(",", ".");
+          if (t === "") return onChange("");
+          const n = Number(t);
+          if (!Number.isNaN(n)) onChange(n);
+        }}
+        className="min-h-14 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-xl font-semibold"
+      />
     </label>
   );
 }
 
-// RIR em chips de um toque (0–3) + limpar. Mais rápido que stepper no treino.
+// RIR em chips de um toque (0–2). Tocar no selecionado limpa.
 function RirChips({
   value,
   onChange,
@@ -85,18 +59,18 @@ function RirChips({
   onChange: (v: number | "") => void;
 }) {
   return (
-    <div className="flex flex-1 flex-col gap-1">
+    <div className="flex flex-col gap-1">
       <span className="text-[11px] uppercase tracking-wide text-zinc-500">
         RIR
       </span>
-      <span className="flex gap-1">
-        {[0, 1, 2, 3].map((n) => (
+      <span className="flex gap-2">
+        {[0, 1, 2].map((n) => (
           <button
             key={n}
             type="button"
             onClick={() => onChange(value === n ? "" : n)}
             aria-pressed={value === n}
-            className={`min-h-12 flex-1 rounded-lg border text-lg font-semibold ${
+            className={`min-h-14 flex-1 rounded-lg border text-xl font-semibold ${
               value === n
                 ? "border-emerald-500 bg-emerald-500/20 text-emerald-200"
                 : "border-zinc-700 text-zinc-300"
@@ -214,18 +188,8 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
     });
   }
 
-  function repetirAnterior(exIdx: number, serieIdx: number) {
-    const ex = sessao?.exercicios[exIdx];
-    const ant = ex?.series[serieIdx - 1];
-    if (!ant) return;
-    patchSerie(exIdx, serieIdx, {
-      carga: ant.carga,
-      reps: ant.reps,
-      rir: ant.rir,
-    });
-  }
-
-  function addSerie(exIdx: number) {    setSessao((s) => {
+  function addSerie(exIdx: number) {
+    setSessao((s) => {
       if (!s) return s;
       const exercicios = s.exercicios.map((ex, i) => {
         if (i !== exIdx || ex.series.length >= 4) return ex;
@@ -254,32 +218,6 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
       const exercicios = s.exercicios.map((ex, i) => {
         if (i !== exIdx || ex.series.length <= 1) return ex;
         return { ...ex, series: ex.series.filter((_, j) => j !== serieIdx) };
-      });
-      return { ...s, exercicios };
-    });
-  }
-
-  // Preenche as séries com os valores de referência (ação explícita —
-  // nada é pré-preenchido além da carga).
-  function usarUltimaSessao(exIdx: number) {
-    setSessao((s) => {
-      if (!s) return s;
-      const exercicios = s.exercicios.map((ex, i) => {
-        if (i !== exIdx) return ex;
-        const refs = [ex.reps1, ex.reps2];
-        const rirs = [ex.rir1, ex.rir2];
-        return {
-          ...ex,
-          series: ex.series.map((se, j) => {
-            const next = {
-              ...se,
-              carga: ex.cargaRef ?? se.carga,
-              reps: refs[j] ?? se.reps,
-              rir: rirs[j] ?? se.rir,
-            };
-            return { ...next, feita: serieFeita(next) };
-          }),
-        };
       });
       return { ...s, exercicios };
     });
@@ -524,13 +462,6 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
           </p>
         </div>
 
-        <button
-          onClick={() => usarUltimaSessao(fi)}
-          className="mt-2 min-h-11 w-full rounded-lg border border-emerald-800 bg-emerald-950/40 px-3 text-sm font-semibold text-emerald-200 active:scale-[0.99]"
-        >
-          Usar última sessão
-        </button>
-
         {ex.ultimaObs && (
           <div className="mt-2">
             <button
@@ -543,45 +474,41 @@ function Execucao({ treino, sessaoParam }: { treino: Treino; sessaoParam: string
           </div>
         )}
 
-        <div className="mt-3 flex flex-col gap-3">
-          {ex.series.map((se, serieIdx) => (
+        <div className="mt-3 flex flex-col gap-4">
+          {ex.series.map((se, serieIdx) => {
+            const refReps = [ex.reps1, ex.reps2][serieIdx];
+            return (
             <div key={serieIdx} className={`rounded-lg border p-3 ${se.feita ? "border-emerald-800 bg-emerald-950/30" : "border-zinc-800 bg-zinc-950"}`}>
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-semibold">Série {serieIdx + 1} {se.feita ? "✓" : ""}</span>
-                <span className="flex gap-3">
-                  {serieIdx > 0 && (
-                    <button onClick={() => repetirAnterior(fi, serieIdx)} className="min-h-9 text-xs text-emerald-300 underline">
-                      Repetir anterior
-                    </button>
-                  )}
-                  {ex.series.length > 1 && (
-                    <button
-                      onClick={() => removerSerie(fi, serieIdx)}
-                      aria-label={`Remover série ${serieIdx + 1}`}
-                      className="min-h-9 min-w-9 text-xs text-zinc-500"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </span>
+                {ex.series.length > 1 && (
+                  <button
+                    onClick={() => removerSerie(fi, serieIdx)}
+                    aria-label={`Remover série ${serieIdx + 1}`}
+                    className="min-h-9 min-w-9 text-xs text-zinc-500"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
-              <div className="flex gap-2">
-                <Num label="Carga kg" value={se.carga} step={1} min={0} onChange={(v) => patchSerie(fi, serieIdx, { carga: v })} />
-                <Num label="Reps" value={se.reps} step={1} min={0} onChange={(v) => patchSerie(fi, serieIdx, { reps: v })} />
+              <div className="flex flex-col gap-2.5">
+                <Num
+                  label="Carga (kg)"
+                  value={se.carga}
+                  placeholder={ex.cargaRef != null ? String(ex.cargaRef) : undefined}
+                  onChange={(v) => patchSerie(fi, serieIdx, { carga: v })}
+                />
+                <Num
+                  label="Repetições"
+                  value={se.reps}
+                  placeholder={refReps != null ? String(refReps) : undefined}
+                  onChange={(v) => patchSerie(fi, serieIdx, { reps: v })}
+                />
                 <RirChips value={se.rir} onChange={(v) => patchSerie(fi, serieIdx, { rir: v })} />
               </div>
-              <button
-                onClick={() =>
-                  patchSerie(fi, serieIdx, {
-                    carga: se.carga === "" ? 2.5 : +(se.carga + 2.5).toFixed(1),
-                  })
-                }
-                className="mt-2 min-h-9 rounded-lg border border-zinc-800 px-3 text-xs text-zinc-300"
-              >
-                +2,5 kg
-              </button>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="mt-3 flex gap-2">
