@@ -53,7 +53,7 @@ function Num({
             onChange(n);
           }
         }}
-        className="min-h-11 w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 text-2xl font-medium tabular-nums placeholder:text-neutral-500 focus:border-white"
+        className="number-input min-h-11 w-full rounded-xl border px-3 text-2xl font-medium tabular-nums placeholder:text-neutral-500"
       />
     </label>
   );
@@ -83,10 +83,8 @@ function RirChips({
             type="button"
             onClick={() => onChange(value === n ? "" : n)}
             aria-pressed={value === n}
-            className={`min-h-11 min-w-11 rounded-full border text-sm font-semibold ${
-              value === n
-                ? "border-white bg-white text-black"
-                : "border-neutral-700 text-neutral-300"
+            className={`rir-chip min-h-11 min-w-11 rounded-full border text-sm font-semibold ${
+              value === n ? "rir-chip--selected" : ""
             }`}
           >
             {n}
@@ -398,7 +396,7 @@ function Execucao({
           </p>
         </header>
 
-        <div className="flex items-end justify-between gap-4 border-y border-neutral-800 py-5">
+        <div className="surface-card flex items-end justify-between gap-4 rounded-2xl px-4 py-5">
           <div>
             <p className="text-4xl font-medium tabular-nums">
               {registros.length}{" "}
@@ -417,7 +415,7 @@ function Execucao({
         </div>
 
         {pendencias.length > 0 && (
-          <div className="rounded-2xl border border-neutral-700 p-4 text-sm leading-relaxed">
+          <div className="surface-card rounded-2xl p-4 text-sm leading-relaxed">
             <p className="font-medium">
               {pendencias.length}{" "}
               {pendencias.length === 1
@@ -440,7 +438,7 @@ function Execucao({
             {resumoEx.map((e, i) => (
               <div key={i} className="py-4 first:pt-0">
                 <div className="flex items-start gap-3">
-                  <span aria-hidden="true" className="mt-0.5 text-neutral-400">
+                  <span aria-hidden="true" className="accent-text mt-0.5">
                     ✓
                   </span>
                   <div className="min-w-0 flex-1">
@@ -545,7 +543,7 @@ function Execucao({
             <span aria-hidden="true">←</span> Treinos
           </button>
           <p className="text-sm font-medium">{sessao.treinoNome}</p>
-          <span className="text-xs text-neutral-400 tabular-nums">
+          <span className="progress-pill rounded-full px-2 py-1 text-xs tabular-nums">
             {feitas}/{total} séries
           </span>
         </div>
@@ -563,7 +561,13 @@ function Execucao({
                 onClick={() => irPara(i)}
                 aria-label={`${x.ordem}. ${x.nome}${ok ? ", concluído" : ""}`}
                 aria-current={ativo ? "step" : undefined}
-                className={`min-h-11 min-w-11 shrink-0 rounded-full border text-sm font-medium ${ativo ? "border-white bg-white text-black" : ok ? "border-neutral-500 text-white" : "border-neutral-800 text-neutral-400"}`}
+                className={`exercise-step min-h-11 min-w-11 shrink-0 rounded-full border text-sm font-medium ${
+                  ativo
+                    ? "exercise-step--active"
+                    : ok
+                      ? "exercise-step--done"
+                      : ""
+                }`}
               >
                 {ok && !ativo ? <span aria-hidden="true">✓</span> : x.ordem}
               </button>
@@ -577,7 +581,11 @@ function Execucao({
           <p className="eyebrow">
             Exercício {fi + 1} de {nEx}
           </p>
-          <span className="text-xs text-neutral-400">
+          <span
+            className={`text-xs ${
+              exCompleto ? "accent-text" : "text-neutral-400"
+            }`}
+          >
             {exCompleto
               ? "✓ Concluído"
               : `${feitasEx} de ${ex.series.length} séries`}
@@ -592,8 +600,8 @@ function Execucao({
           {ex.nome}
         </h1>
 
-        <div className="mt-3 border-l-2 border-neutral-600 pl-3">
-          <p className="text-xs font-medium text-neutral-300">
+        <div className="reference-panel mt-3 px-3 py-3">
+          <p className="eyebrow accent-text">
             Referência da planilha
           </p>
           <p className="mt-1 text-sm text-neutral-400">
@@ -609,7 +617,7 @@ function Execucao({
             </span>
           </div>
           {ex.proximaAcao && (
-            <p className="mt-1 text-sm text-neutral-200">{ex.proximaAcao}</p>
+            <p className="accent-text mt-2 text-sm font-medium">{ex.proximaAcao}</p>
           )}
         </div>
 
@@ -641,12 +649,14 @@ function Execucao({
             <fieldset
               key={serieIdx}
               aria-label={`Série ${serieIdx + 1}`}
-              className={`min-w-0 rounded-[20px] border px-4 pb-2 ${se.feita ? "border-neutral-500 bg-[#111111]" : "border-neutral-800 bg-[#101010]"}`}
+              className={`series-card min-w-0 rounded-[20px] border px-4 pb-2 ${
+                se.feita ? "series-card--done" : ""
+              }`}
             >
               <div className="flex min-h-11 items-center justify-between gap-2">
                 <p className="text-xs font-medium text-neutral-300">
                   Série {serieIdx + 1}
-                  <span className="ml-2 text-neutral-400">
+                  <span className="accent-text ml-2">
                     {se.feita ? "✓ Registrada" : ""}
                   </span>
                 </p>
@@ -725,7 +735,7 @@ function Execucao({
                 )
               }
               placeholder="Algo para lembrar na próxima sessão…"
-              className="mt-2 w-full resize-y rounded-2xl border border-neutral-700 bg-neutral-900 p-3 text-base text-neutral-100"
+              className="note-input mt-2 w-full resize-y rounded-2xl border p-3 text-base text-neutral-100"
             />
           </label>
         ) : ex.obs ? (

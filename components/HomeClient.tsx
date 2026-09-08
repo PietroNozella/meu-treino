@@ -92,15 +92,15 @@ export default function Home() {
       {ativa && ativa.status !== "sincronizada" && (
         <section
           aria-label="Sessão em andamento"
-          className="rounded-3xl border border-neutral-600 bg-neutral-900 p-5"
+          className="surface-card active-session-card rounded-3xl p-5"
         >
-          <p className="eyebrow">
+          <p className="eyebrow accent-text">
             {ativa.status === "falha" ? "Envio pendente" : "De onde você parou"}
           </p>
           <h2 className="mt-2 text-2xl font-medium tracking-tight">
             {ativa.treinoNome}
           </h2>
-          <p className="mt-1 text-xs text-neutral-400">
+          <p className="progress-pill mt-3 inline-flex rounded-full px-3 py-1 text-xs tabular-nums">
             {ativaFeitas}/{ativaSeries.length} séries · {decorridoTxt}
           </p>
           <div className="mt-4">

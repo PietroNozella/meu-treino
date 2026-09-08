@@ -6,6 +6,7 @@ export default function RegistroMark({ size = 32 }: { size?: number }) {
       viewBox="0 0 48 48"
       fill="none"
       aria-hidden="true"
+      style={{ color: "var(--accent)" }}
     >
       <rect
         x="5"
@@ -13,12 +14,12 @@ export default function RegistroMark({ size = 32 }: { size?: number }) {
         width="38"
         height="38"
         rx="11"
-        stroke="#f5f5f5"
+        stroke="currentColor"
         strokeWidth="2"
       />
       <path
         d="m13 17 2 2 4-4M24 17h10M14 25h4M24 25h10M14 33h4M24 33h7"
-        stroke="#f5f5f5"
+        stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
