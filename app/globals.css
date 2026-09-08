@@ -86,8 +86,7 @@ summary {
   cursor: pointer;
 }
 
-:focus-visible:not([tabindex="-1"]),
-.focus-target:focus {
+:focus-visible:not([tabindex="-1"]) {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 3px;
 }

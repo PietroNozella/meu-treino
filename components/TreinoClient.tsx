@@ -392,7 +392,7 @@ function Execucao({
           <h1
             ref={tituloResumo}
             tabIndex={-1}
-            className="focus-target mt-2 text-3xl font-semibold tracking-tight"
+            className="mt-2 text-3xl font-semibold tracking-tight outline-none"
           >
             {enviado ? "Tudo registrado." : "Revise seu registro."}
           </h1>
@@ -606,7 +606,7 @@ function Execucao({
           id="exercise-title"
           ref={tituloExercicio}
           tabIndex={-1}
-          className="focus-target mt-2 text-2xl leading-tight font-semibold tracking-tight"
+          className="mt-2 text-2xl leading-tight font-semibold tracking-tight outline-none"
         >
           {ex.nome}
         </h1>
