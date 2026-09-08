@@ -104,11 +104,11 @@ export default function Home() {
           )}
         </div>
         <p className="eyebrow mt-8">{hoje}</p>
-        <h1 className="mt-2 text-4xl font-semibold tracking-tight">
-          Seus treinos.
+        <h1 className="display-title mt-2">
+          Bora treinar?
         </h1>
         <p className="text-secondary mt-2 text-sm">
-          Escolha o treino e registre suas séries.
+          Escolha um treino e registre do seu jeito.
         </p>
       </header>
 
@@ -118,7 +118,7 @@ export default function Home() {
           className="surface-card active-session-card radius-lg p-5"
         >
           <p className="eyebrow accent-text">
-            {ativa.status === "falha" ? "Envio pendente" : "De onde você parou"}
+            {ativa.status === "falha" ? "Envio pendente" : "Continua daqui"}
           </p>
           <h2 className="mt-2 text-2xl font-medium tracking-tight">
             {ativa.treinoNome}
@@ -151,7 +151,7 @@ export default function Home() {
       <ListaTreinos onIniciar={iniciar} />
 
       <footer className="border-subtle text-secondary border-t pt-5 text-xs leading-relaxed">
-        Sua planilha, com menos toques.
+        Seu treino, do seu jeito.
         <br />
         Registre aqui e envie quando terminar.
       </footer>

@@ -392,14 +392,14 @@ function Execucao({
           <h1
             ref={tituloResumo}
             tabIndex={-1}
-            className="mt-2 text-3xl font-semibold tracking-tight outline-none"
+            className="page-title mt-2 outline-none"
           >
-            {enviado ? "Tudo registrado." : "Revise seu registro."}
+            {enviado ? "Treino na conta." : "Confere aí."}
           </h1>
           <p className="text-secondary mt-2 text-sm">
             {enviado
               ? "Sessão enviada à sua planilha."
-              : "Confira as séries antes de enviar à planilha."}
+              : "Veja se está tudo certo antes de enviar."}
           </p>
         </header>
 
@@ -553,7 +553,9 @@ function Execucao({
           >
             <span aria-hidden="true">←</span> Treinos
           </button>
-          <p className="text-sm font-medium">{sessao.treinoNome}</p>
+          <p className="max-w-[42%] truncate text-sm font-semibold">
+            {sessao.treinoNome}
+          </p>
           <span className="progress-pill rounded-full px-2 py-1 text-xs tabular-nums">
             {feitas}/{total} séries
           </span>
@@ -606,7 +608,7 @@ function Execucao({
           id="exercise-title"
           ref={tituloExercicio}
           tabIndex={-1}
-          className="mt-2 text-2xl leading-tight font-semibold tracking-tight outline-none"
+          className="page-title mt-2 outline-none"
         >
           {ex.nome}
         </h1>

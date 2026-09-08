@@ -15,7 +15,7 @@ export default function ListaTreinos({
     <section aria-labelledby="workouts-heading">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 id="workouts-heading" className="eyebrow">
-          Na sua planilha
+          Seus treinos
         </h2>
         <span className="text-secondary text-xs tabular-nums">
           {treinos.length} treinos
@@ -44,7 +44,7 @@ export default function ListaTreinos({
               {String(i + 1).padStart(2, "0")}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-lg font-medium tracking-tight">
+              <span className="block text-xl leading-tight font-semibold tracking-tight">
                 {t.nome}
               </span>
               <span className="text-secondary mt-0.5 block text-xs tabular-nums">

@@ -14,12 +14,12 @@ function LoginConteudo() {
   return (
     <main className="centered-page items-start py-8">
       <RegistroMark size={52} />
-      <p className="eyebrow mt-7">Sua planilha, com menos toques</p>
-      <h1 className="mt-3 text-5xl font-semibold tracking-tight">
+      <p className="eyebrow mt-7">Seu treino, do seu jeito</p>
+      <h1 className="display-title mt-3">
         Meu Treino<span className="text-tertiary">.</span>
       </h1>
       <p className="text-secondary mt-4 max-w-72 text-base leading-relaxed">
-        Um lugar simples para registrar suas séries e seguir o treino.
+        Registre suas séries, acompanhe o ritmo e siga em frente.
       </p>
       {erro && (
         <p

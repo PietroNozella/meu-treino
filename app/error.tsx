@@ -20,7 +20,7 @@ export default function Error({
   return (
     <main className="centered-page gap-4">
       <p className="eyebrow">Vamos tentar novamente</p>
-      <h1 className="text-3xl font-semibold tracking-tight">
+      <h1 className="page-title">
         Não foi possível carregar.
       </h1>
       <p role="alert" className="text-secondary text-sm leading-relaxed">

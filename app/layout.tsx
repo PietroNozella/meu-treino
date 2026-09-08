@@ -1,6 +1,16 @@
 import type { Metadata, Viewport } from "next";
+import { Bricolage_Grotesque } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
+
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
+  subsets: ["latin"],
+  weight: "variable",
+  axes: ["opsz", "wdth"],
+  display: "swap",
+  fallback: ["Arial", "Helvetica", "sans-serif"],
+});
 
 // App inteiro atrás de login e com dados por request — sem prerender.
 export const dynamic = "force-dynamic";
@@ -31,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className="dark">
+    <html lang="pt-BR" className={`dark ${bricolage.variable}`}>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
