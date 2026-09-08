@@ -17,17 +17,25 @@ export default function ListaTreinos({
         <h2 id="workouts-heading" className="eyebrow">
           Na sua planilha
         </h2>
-        <span className="text-xs text-neutral-400">
+        <span className="text-secondary text-xs tabular-nums">
           {treinos.length} treinos
         </span>
       </div>
-      <div className="flex flex-col gap-2.5">
+      {treinos.length === 0 ? (
+        <div className="surface-card radius-lg px-5 py-8 text-center">
+          <p className="font-medium">Nenhum treino disponível.</p>
+          <p className="text-secondary mt-2 text-sm leading-relaxed">
+            Adicione um treino à planilha e recarregue esta página.
+          </p>
+        </div>
+      ) : (
+      <div className="flex flex-col gap-3">
         {treinos.map((t, i) => (
           <button
             key={t.id}
             onClick={() => onIniciar(t)}
             aria-label={`Iniciar ${t.nome}`}
-            className="workout-card group flex w-full items-center gap-4 rounded-[22px] border px-4 py-5 text-left"
+            className="workout-card radius-lg group flex w-full items-center gap-4 border px-4 py-5 text-left"
           >
             <span
               aria-hidden="true"
@@ -39,10 +47,10 @@ export default function ListaTreinos({
               <span className="block text-lg font-medium tracking-tight">
                 {t.nome}
               </span>
-              <span className="mt-0.5 block text-xs text-neutral-400">
+              <span className="text-secondary mt-0.5 block text-xs tabular-nums">
                 {t.exercicios.length} exercícios
               </span>
-              <span className="mt-2 block truncate text-xs text-neutral-400">
+              <span className="text-secondary mt-2 block truncate text-xs">
                 {t.exercicios
                   .slice(0, 3)
                   .map((e) => e.nome)
@@ -52,6 +60,7 @@ export default function ListaTreinos({
           </button>
         ))}
       </div>
+      )}
     </section>
   );
 }

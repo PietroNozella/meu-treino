@@ -2,11 +2,11 @@ export default function Loading() {
   return (
     <main
       role="status"
-      className="centered-page items-center gap-4 text-sm text-neutral-400"
+      className="centered-page text-secondary items-center gap-4 text-sm"
     >
       <span
         aria-hidden="true"
-        className="h-8 w-8 animate-pulse rounded-xl border border-neutral-600"
+        className="loading-spinner h-8 w-8"
       />
       Carregando seus treinos…
     </main>

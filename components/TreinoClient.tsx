@@ -30,7 +30,7 @@ function Num({
 
   return (
     <label className="flex min-w-0 flex-col gap-1">
-      <span className="text-xs text-neutral-400">{label}</span>
+      <span className="text-secondary text-xs">{label}</span>
       <input
         inputMode={inputMode}
         autoComplete="off"
@@ -53,7 +53,7 @@ function Num({
             onChange(n);
           }
         }}
-        className="number-input min-h-11 w-full rounded-xl border px-3 text-2xl font-medium tabular-nums placeholder:text-neutral-500"
+        className="number-input radius-sm min-h-12 w-full border px-3 text-2xl font-medium tabular-nums placeholder:text-[var(--color-text-tertiary)]"
       />
     </label>
   );
@@ -73,8 +73,8 @@ function RirChips({
       aria-label="RIR (opcional)"
       className="mt-2 flex items-center justify-between gap-3"
     >
-      <span className="text-xs text-neutral-400">
-        RIR <span className="text-neutral-400">· opcional</span>
+      <span className="text-secondary text-xs">
+        RIR <span>· opcional</span>
       </span>
       <span className="flex gap-1.5">
         {[0, 1, 2].map((n) => (
@@ -83,7 +83,7 @@ function RirChips({
             type="button"
             onClick={() => onChange(value === n ? "" : n)}
             aria-pressed={value === n}
-            className={`rir-chip min-h-11 min-w-11 rounded-full border text-sm font-semibold ${
+            className={`rir-chip min-h-12 min-w-12 rounded-full border text-sm font-semibold ${
               value === n ? "rir-chip--selected" : ""
             }`}
           >
@@ -106,8 +106,15 @@ export default function TreinoClient({
   const treino = treinos.find((t) => t.id === id);
   if (!treino) {
     return (
-      <main className="pt-8 text-center text-sm text-zinc-400">
-        Treino não encontrado.
+      <main className="centered-page items-center text-center">
+        <p className="eyebrow">Treino indisponível</p>
+        <h1 className="mt-2 text-2xl font-semibold">Treino não encontrado.</h1>
+        <p className="text-secondary mt-2 text-sm">
+          Ele pode ter sido removido ou o endereço está incorreto.
+        </p>
+        <a href="/" className="button-primary mt-6 w-full">
+          Voltar aos treinos
+        </a>
       </main>
     );
   }
@@ -205,7 +212,7 @@ function Execucao({
 
   if (!sessao) {
     return (
-      <main className="pt-8 text-center text-sm text-zinc-400">
+      <main role="status" className="text-secondary pt-8 text-center text-sm">
         Carregando treino…
       </main>
     );
@@ -385,44 +392,44 @@ function Execucao({
           <h1
             ref={tituloResumo}
             tabIndex={-1}
-            className="mt-2 text-3xl font-semibold tracking-tight outline-none"
+            className="focus-target mt-2 text-3xl font-semibold tracking-tight"
           >
             {enviado ? "Tudo registrado." : "Revise seu registro."}
           </h1>
-          <p className="mt-2 text-sm text-neutral-400">
+          <p className="text-secondary mt-2 text-sm">
             {enviado
               ? "Sessão enviada à sua planilha."
               : "Confira as séries antes de enviar à planilha."}
           </p>
         </header>
 
-        <div className="surface-card flex items-end justify-between gap-4 rounded-2xl px-4 py-5">
+        <div className="surface-card radius-md flex items-end justify-between gap-4 px-4 py-5">
           <div>
             <p className="text-4xl font-medium tabular-nums">
               {registros.length}{" "}
-              <span className="ml-2 text-sm text-neutral-400">
+              <span className="text-secondary ml-2 text-sm">
                 séries registradas
               </span>
             </p>
           </div>
-          <p className="text-right text-xs leading-5 text-neutral-400">
+          <p className="text-secondary text-right text-xs leading-5">
             Volume total
             <br />
-            <span className="text-sm text-neutral-200 tabular-nums">
+            <span className="text-primary text-sm tabular-nums">
               {volumeSessao(sessao).toLocaleString("pt-BR")} kg
             </span>
           </p>
         </div>
 
         {pendencias.length > 0 && (
-          <div className="surface-card rounded-2xl p-4 text-sm leading-relaxed">
+          <div className="surface-card radius-md p-4 text-sm leading-relaxed">
             <p className="font-medium">
               {pendencias.length}{" "}
               {pendencias.length === 1
                 ? "série incompleta"
                 : "séries incompletas"}
             </p>
-            <p className="mt-1 text-neutral-400">
+            <p className="text-secondary mt-1">
               {enviado
                 ? "Somente séries com carga e repetições preenchidas foram enviadas."
                 : "Somente séries com carga e repetições preenchidas serão enviadas."}
@@ -433,7 +440,7 @@ function Execucao({
         {resumoEx.length > 0 ? (
           <section
             aria-label="Séries para envio"
-            className="divide-y divide-neutral-800"
+            className="divide-y divide-[var(--color-border-subtle)]"
           >
             {resumoEx.map((e, i) => (
               <div key={i} className="py-4 first:pt-0">
@@ -443,14 +450,14 @@ function Execucao({
                   </span>
                   <div className="min-w-0 flex-1">
                     <h2 className="font-medium leading-snug">{e.nome}</h2>
-                    <p className="mt-1.5 text-sm leading-relaxed text-neutral-400 tabular-nums">
+                    <p className="text-secondary mt-1.5 text-sm leading-relaxed tabular-nums">
                       {e.det}
                     </p>
-                    <p className="mt-1 text-xs text-neutral-400">
+                    <p className="text-secondary mt-1 text-xs tabular-nums">
                       Volume: {e.vol.toLocaleString("pt-BR")} kg
                     </p>
                     {e.obs && (
-                      <p className="mt-2 break-words text-sm text-neutral-400">
+                      <p className="text-secondary mt-2 break-words text-sm">
                         {e.obs}
                       </p>
                     )}
@@ -460,7 +467,7 @@ function Execucao({
             ))}
           </section>
         ) : (
-          <p className="text-sm text-neutral-400">
+          <p className="text-secondary text-sm">
             Nenhuma série completa ainda. Volte ao treino para preencher.
           </p>
         )}
@@ -470,11 +477,11 @@ function Execucao({
             {erroEnvio && (
               <div
                 role="alert"
-                className="rounded-2xl border border-neutral-500 p-4 text-sm leading-relaxed"
+                className="border-strong radius-md border p-4 text-sm leading-relaxed"
               >
                 <p className="font-semibold">Não foi possível enviar.</p>
-                <p className="mt-1 text-neutral-300">{erroEnvio}</p>
-                <p className="mt-2 text-neutral-400">
+                <p className="text-secondary mt-1">{erroEnvio}</p>
+                <p className="text-secondary mt-2">
                   {salvoLocal
                     ? "Registro salvo neste aparelho. Tente novamente."
                     : "Mantenha esta página aberta e tente novamente."}
@@ -482,24 +489,28 @@ function Execucao({
               </div>
             )}
             {salvoLocal === false && (
-              <p role="alert" className="text-sm text-neutral-300">
+              <p role="alert" className="text-secondary text-sm">
                 Não foi possível salvar neste aparelho. Mantenha a página aberta
                 até enviar.
               </p>
             )}
-            <p className="text-xs text-neutral-400">
+            <p className="text-secondary text-xs">
               Destino: sua planilha · aba Registros do App
             </p>
             <button
               onClick={enviar}
               disabled={enviando || registros.length === 0}
+              aria-busy={enviando}
               className="button-primary w-full"
             >
-              {enviando
-                ? "Enviando…"
-                : erroEnvio
-                  ? "Tentar enviar novamente"
-                  : `Enviar ${registros.length} ${registros.length === 1 ? "série" : "séries"} à planilha`}
+              {enviando && <span className="loading-spinner" aria-hidden="true" />}
+              <span>
+                {enviando
+                  ? "Enviando…"
+                  : erroEnvio
+                    ? "Tentar enviar novamente"
+                    : `Enviar ${registros.length} ${registros.length === 1 ? "série" : "séries"} à planilha`}
+              </span>
             </button>
             <button
               disabled={enviando}
@@ -511,7 +522,7 @@ function Execucao({
           </div>
         ) : (
           <div role="status" className="flex flex-col gap-3">
-            <p className="text-sm text-neutral-300">✓ Envio confirmado.</p>
+            <p className="text-secondary text-sm">✓ Envio confirmado.</p>
             <button
               onClick={() => router.push("/")}
               className="button-primary w-full"
@@ -561,7 +572,7 @@ function Execucao({
                 onClick={() => irPara(i)}
                 aria-label={`${x.ordem}. ${x.nome}${ok ? ", concluído" : ""}`}
                 aria-current={ativo ? "step" : undefined}
-                className={`exercise-step min-h-11 min-w-11 shrink-0 rounded-full border text-sm font-medium ${
+                className={`exercise-step min-h-12 min-w-12 shrink-0 rounded-full border text-sm font-medium ${
                   ativo
                     ? "exercise-step--active"
                     : ok
@@ -583,7 +594,7 @@ function Execucao({
           </p>
           <span
             className={`text-xs ${
-              exCompleto ? "accent-text" : "text-neutral-400"
+              exCompleto ? "accent-text" : "text-secondary"
             }`}
           >
             {exCompleto
@@ -595,7 +606,7 @@ function Execucao({
           id="exercise-title"
           ref={tituloExercicio}
           tabIndex={-1}
-          className="mt-2 text-[26px] leading-tight font-semibold tracking-tight outline-none"
+          className="focus-target mt-2 text-2xl leading-tight font-semibold tracking-tight"
         >
           {ex.nome}
         </h1>
@@ -604,11 +615,11 @@ function Execucao({
           <p className="eyebrow accent-text">
             Referência da planilha
           </p>
-          <p className="mt-1 text-sm text-neutral-400">
+          <p className="text-secondary mt-1 text-sm tabular-nums">
             {ex.cargaRef != null ? `${ex.cargaRef} kg` : "Carga não informada"}{" "}
             · {ex.seriesPrevistas}
           </p>
-          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs leading-5 text-neutral-400 tabular-nums">
+          <div className="text-secondary mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs leading-5 tabular-nums">
             <span>
               S1 · {ex.reps1 ?? "—"} reps · RIR {ex.rir1 ?? "—"}
             </span>
@@ -636,7 +647,7 @@ function Execucao({
             {notasAbertas && (
               <p
                 id="previous-note"
-                className="mb-3 border-l border-neutral-700 pl-3 text-sm leading-relaxed text-neutral-400"
+                className="border-default text-secondary mb-3 border-l pl-3 text-sm leading-relaxed"
               >
                 {ex.ultimaObs}
               </p>
@@ -649,12 +660,12 @@ function Execucao({
             <fieldset
               key={serieIdx}
               aria-label={`Série ${serieIdx + 1}`}
-              className={`series-card min-w-0 rounded-[20px] border px-4 pb-2 ${
+              className={`series-card radius-lg min-w-0 border px-4 pb-2 ${
                 se.feita ? "series-card--done" : ""
               }`}
             >
-              <div className="flex min-h-11 items-center justify-between gap-2">
-                <p className="text-xs font-medium text-neutral-300">
+              <div className="flex min-h-12 items-center justify-between gap-2">
+                <p className="text-secondary text-xs font-medium">
                   Série {serieIdx + 1}
                   <span className="accent-text ml-2">
                     {se.feita ? "✓ Registrada" : ""}
@@ -664,7 +675,7 @@ function Execucao({
                   <button
                     onClick={() => removerSerie(fi, serieIdx)}
                     aria-label={`Remover série ${serieIdx + 1}`}
-                    className="-mr-2 min-h-11 min-w-11 rounded-full text-lg text-neutral-400"
+                    className="text-secondary -mr-2 min-h-12 min-w-12 rounded-full text-lg"
                   >
                     −
                   </button>
@@ -703,7 +714,7 @@ function Execucao({
           <button
             onClick={() => setObsAberta((v) => !v)}
             aria-expanded={obsAberta}
-            aria-controls="exercise-note"
+            aria-controls="exercise-note-input"
             className="button-quiet px-3 text-xs"
           >
             {obsAberta
@@ -715,12 +726,12 @@ function Execucao({
         </div>
         {obsAberta ? (
           <label
-            id="exercise-note"
-            className="mt-2 block text-xs text-neutral-400"
+            className="text-secondary mt-2 block text-xs"
           >
             Observação do exercício (opcional)
             <textarea
               rows={3}
+              id="exercise-note-input"
               value={ex.obs}
               onChange={(e) =>
                 setSessao((s) =>
@@ -735,11 +746,11 @@ function Execucao({
                 )
               }
               placeholder="Algo para lembrar na próxima sessão…"
-              className="note-input mt-2 w-full resize-y rounded-2xl border p-3 text-base text-neutral-100"
+              className="note-input radius-md text-primary mt-2 w-full resize-y border p-3 text-base"
             />
           </label>
         ) : ex.obs ? (
-          <p className="mt-1 break-words text-sm leading-relaxed text-neutral-400">
+          <p className="text-secondary mt-1 break-words text-sm leading-relaxed">
             {ex.obs}
           </p>
         ) : null}
@@ -748,7 +759,7 @@ function Execucao({
       <div className="mt-3 flex flex-col items-center gap-1">
         <p
           role="status"
-          className="text-center text-xs leading-relaxed text-neutral-400"
+          className="text-secondary text-center text-xs leading-relaxed"
         >
           {salvoLocal === null
             ? "Salvando neste aparelho…"

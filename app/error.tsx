@@ -23,7 +23,7 @@ export default function Error({
       <h1 className="text-3xl font-semibold tracking-tight">
         Não foi possível carregar.
       </h1>
-      <p role="alert" className="text-sm leading-relaxed text-neutral-400">
+      <p role="alert" className="text-secondary text-sm leading-relaxed">
         {error.message || "Verifique a internet e tente de novo."}
       </p>
       <button

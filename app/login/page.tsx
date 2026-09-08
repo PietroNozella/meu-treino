@@ -2,28 +2,29 @@
 
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import RegistroMark from "@/components/RegistroMark";
 
 function LoginConteudo() {
   const search = useSearchParams();
   const erro = search.get("error");
   const negado = erro === "AccessDenied" || erro === "OAuthAccountNotLinked";
+  const [entrando, setEntrando] = useState(false);
 
   return (
     <main className="centered-page items-start py-8">
       <RegistroMark size={52} />
       <p className="eyebrow mt-7">Sua planilha, com menos toques</p>
       <h1 className="mt-3 text-5xl font-semibold tracking-tight">
-        Meu Treino<span className="text-neutral-500">.</span>
+        Meu Treino<span className="text-tertiary">.</span>
       </h1>
-      <p className="mt-4 max-w-72 text-base leading-relaxed text-neutral-400">
+      <p className="text-secondary mt-4 max-w-72 text-base leading-relaxed">
         Um lugar simples para registrar suas séries e seguir o treino.
       </p>
       {erro && (
         <p
           role="alert"
-          className="mt-6 w-full rounded-2xl border border-neutral-600 p-4 text-sm text-neutral-300"
+          className="border-strong text-secondary radius-md mt-6 w-full border p-4 text-sm"
         >
           {negado
             ? "Essa conta Google não está autorizada."
@@ -31,12 +32,22 @@ function LoginConteudo() {
         </p>
       )}
       <button
-        onClick={() => signIn("google", { callbackUrl: "/" })}
+        onClick={async () => {
+          setEntrando(true);
+          try {
+            await signIn("google", { callbackUrl: "/" });
+          } finally {
+            setEntrando(false);
+          }
+        }}
+        disabled={entrando}
+        aria-busy={entrando}
         className="button-primary mt-8 w-full"
       >
-        Entrar com Google
+        {entrando && <span className="loading-spinner" aria-hidden="true" />}
+        <span>{entrando ? "Entrando com Google…" : "Entrar com Google"}</span>
       </button>
-      <p className="mt-4 w-full text-center text-xs text-neutral-400">
+      <p className="text-secondary mt-4 w-full text-center text-xs">
         Use sua conta Google autorizada.
       </p>
     </main>

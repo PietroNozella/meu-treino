@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
@@ -13,7 +13,7 @@ import RegistroMark from "./RegistroMark";
 const ListaTreinos = dynamic(() => import("@/components/ListaTreinos"), {
   ssr: false,
   loading: () => (
-    <p role="status" className="py-6 text-center text-sm text-neutral-400">
+    <p role="status" className="text-secondary py-6 text-center text-sm">
       Carregando treinos…
     </p>
   ),
@@ -26,12 +26,35 @@ export default function Home() {
   // Instantâneo de abertura para o "há Xmin" (estático, sem timer).
   const [agora] = useState(() => Date.now());
   const { data } = useSession();
+  const conta = useRef<HTMLDetailsElement>(null);
   const email = data?.user?.email;
   const hoje = new Date().toLocaleDateString("pt-BR", {
     weekday: "short",
     day: "2-digit",
     month: "2-digit",
   });
+
+  useEffect(() => {
+    function fecharConta(event: KeyboardEvent | PointerEvent) {
+      const details = conta.current;
+      if (!details?.open) return;
+      if (event instanceof KeyboardEvent && event.key === "Escape") {
+        details.open = false;
+        details.querySelector("summary")?.focus();
+      } else if (
+        event instanceof PointerEvent &&
+        !details.contains(event.target as Node)
+      ) {
+        details.open = false;
+      }
+    }
+    document.addEventListener("keydown", fecharConta);
+    document.addEventListener("pointerdown", fecharConta);
+    return () => {
+      document.removeEventListener("keydown", fecharConta);
+      document.removeEventListener("pointerdown", fecharConta);
+    };
+  }, []);
 
   function iniciar(treino: Treino) {
     const s = criarSessaoDe(treino);
@@ -59,15 +82,15 @@ export default function Home() {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <RegistroMark />
-            <span className="eyebrow text-neutral-200">Meu Treino</span>
+            <span className="eyebrow text-primary">Meu Treino</span>
           </div>
           {email && (
-            <details className="relative">
+            <details ref={conta} className="relative">
               <summary className="button-quiet list-none px-3 text-xs">
                 Conta
               </summary>
-              <div className="absolute right-0 z-30 mt-2 w-64 max-w-[calc(100vw-40px)] rounded-2xl border border-neutral-700 bg-neutral-900 p-4 shadow-xl">
-                <p className="break-all text-xs leading-relaxed text-neutral-300">
+              <div className="surface-overlay border-default radius-md absolute right-0 z-30 mt-2 w-64 max-w-[calc(100vw-40px)] border p-4 shadow-xl">
+                <p className="text-secondary break-all text-xs leading-relaxed">
                   {email}
                 </p>
                 <button
@@ -84,7 +107,7 @@ export default function Home() {
         <h1 className="mt-2 text-4xl font-semibold tracking-tight">
           Seus treinos.
         </h1>
-        <p className="mt-2 text-sm text-neutral-400">
+        <p className="text-secondary mt-2 text-sm">
           Escolha o treino e registre suas séries.
         </p>
       </header>
@@ -92,7 +115,7 @@ export default function Home() {
       {ativa && ativa.status !== "sincronizada" && (
         <section
           aria-label="Sessão em andamento"
-          className="surface-card active-session-card rounded-3xl p-5"
+          className="surface-card active-session-card radius-lg p-5"
         >
           <p className="eyebrow accent-text">
             {ativa.status === "falha" ? "Envio pendente" : "De onde você parou"}
@@ -127,7 +150,7 @@ export default function Home() {
 
       <ListaTreinos onIniciar={iniciar} />
 
-      <footer className="border-t border-neutral-800 pt-5 text-xs leading-relaxed text-neutral-400">
+      <footer className="border-subtle text-secondary border-t pt-5 text-xs leading-relaxed">
         Sua planilha, com menos toques.
         <br />
         Registre aqui e envie quando terminar.

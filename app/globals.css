@@ -2,22 +2,60 @@
 
 :root {
   color-scheme: dark;
-  --background: #080808;
-  --surface: #11130f;
-  --surface-raised: #181b14;
-  --border: #30352a;
-  --border-subtle: #23271f;
-  --muted: #b1b6a7;
-  --accent: #c7ff57;
-  --accent-pressed: #afe247;
-  --accent-ink: #101408;
+  --color-background: #080808;
+  --color-surface-base: #11130f;
+  --color-surface-raised: #181b14;
+  --color-surface-overlay: #1c2018;
+  --color-border: #30352a;
+  --color-border-subtle: #23271f;
+  --color-border-strong: #454c3b;
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #c4c9ba;
+  --color-text-tertiary: #aeb4a2;
+  --color-accent: #c7ff57;
+  --color-accent-pressed: #afe247;
+  --color-accent-ink: #101408;
+  --color-accent-soft: rgb(199 255 87 / 9%);
+  --color-accent-faint: rgb(199 255 87 / 8%);
+  --color-accent-border-soft: rgb(199 255 87 / 28%);
+  --color-accent-border: rgb(199 255 87 / 42%);
+  --color-accent-border-strong: rgb(199 255 87 / 48%);
+  --color-focus-ring: #c7ff57;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-full: 999px;
+  --shadow-raised: 0 12px 28px rgb(0 0 0 / 18%);
+  --shadow-overlay: 0 16px 34px rgb(0 0 0 / 28%);
+  --shadow-accent: 0 8px 24px rgb(199 255 87 / 18%);
+  --shadow-accent-compact: 0 5px 16px rgb(199 255 87 / 20%);
+  --shadow-accent-text: 0 0 18px rgb(199 255 87 / 24%);
+  --motion-fast: 140ms;
+  --motion-standard: 240ms;
+
+  /* Compatibilidade durante a migração dos estilos existentes. */
+  --background: var(--color-background);
+  --surface: var(--color-surface-base);
+  --surface-raised: var(--color-surface-raised);
+  --border: var(--color-border);
+  --border-subtle: var(--color-border-subtle);
+  --muted: var(--color-text-secondary);
+  --accent: var(--color-accent);
+  --accent-pressed: var(--color-accent-pressed);
+  --accent-ink: var(--color-accent-ink);
 }
 
 body {
   background:
-    radial-gradient(circle at 50% -18rem, #263315 0, var(--background) 30rem),
+    radial-gradient(circle at 50% -18rem, var(--color-surface-overlay) 0, var(--background) 30rem),
     var(--background);
-  color: #f5f5f5;
+  color: var(--color-text-primary);
   font-family: Arial, Helvetica, sans-serif;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: contain;
@@ -48,14 +86,15 @@ summary {
   cursor: pointer;
 }
 
-:focus-visible:not([tabindex="-1"]) {
-  outline: 2px solid white;
-  outline-offset: 4px;
+:focus-visible:not([tabindex="-1"]),
+.focus-target:focus {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
 }
 
 ::selection {
-  color: #080808;
-  background: #e5e5e5;
+  color: var(--color-background);
+  background: var(--color-text-primary);
 }
 
 @layer components {
@@ -86,29 +125,29 @@ summary {
     gap: 8px;
     min-height: 48px;
     padding: 12px 18px;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     font-size: 14px;
     font-weight: 600;
     line-height: 1.25;
     transition:
-      background-color 140ms,
-      border-color 140ms,
-      box-shadow 140ms,
-      opacity 140ms,
-      transform 140ms;
+      background-color var(--motion-fast),
+      border-color var(--motion-fast),
+      box-shadow var(--motion-fast),
+      opacity var(--motion-fast),
+      transform var(--motion-fast);
   }
 
   .button-primary {
     background: var(--accent);
     color: var(--accent-ink);
-    box-shadow: 0 10px 28px rgb(199 255 87 / 14%);
+    box-shadow: var(--shadow-accent);
   }
   .button-secondary {
-    border: 1px solid #454c3b;
-    color: #f5f5f5;
+    border: 1px solid var(--color-border-strong);
+    color: var(--color-text-primary);
   }
   .button-quiet {
-    color: #b5b5b5;
+    color: var(--color-text-secondary);
   }
   .button-primary:active {
     background: var(--accent-pressed);
@@ -116,7 +155,7 @@ summary {
   }
   .button-secondary:active,
   .button-quiet:active {
-    background: #1c2018;
+    background: var(--color-surface-overlay);
     transform: scale(0.985);
   }
   button:disabled {
@@ -159,14 +198,14 @@ summary {
   .surface-card {
     border: 1px solid var(--border-subtle);
     background: linear-gradient(145deg, var(--surface-raised), var(--surface));
-    box-shadow: 0 14px 32px rgb(0 0 0 / 20%);
+    box-shadow: var(--shadow-raised);
   }
 
   .active-session-card {
-    border-color: rgb(199 255 87 / 42%);
+    border-color: var(--color-accent-border);
     background:
-      linear-gradient(135deg, rgb(199 255 87 / 13%), transparent 46%),
-      linear-gradient(145deg, #1a1e15, var(--surface));
+      linear-gradient(135deg, var(--color-accent-soft), transparent 46%),
+      linear-gradient(145deg, var(--color-surface-overlay), var(--surface));
   }
 
   .workout-card {
@@ -174,18 +213,18 @@ summary {
     overflow: hidden;
     border-color: var(--border-subtle);
     background:
-      linear-gradient(90deg, rgb(199 255 87 / 8%), transparent 18%),
+      linear-gradient(90deg, var(--color-accent-faint), transparent 18%),
       linear-gradient(145deg, var(--surface-raised), var(--surface));
-    box-shadow: 0 12px 28px rgb(0 0 0 / 18%);
+    box-shadow: var(--shadow-raised);
     transition:
-      border-color 140ms,
-      box-shadow 140ms,
-      transform 140ms;
+      border-color var(--motion-fast),
+      box-shadow var(--motion-fast),
+      transform var(--motion-fast);
   }
 
   .workout-card:hover {
-    border-color: rgb(199 255 87 / 42%);
-    box-shadow: 0 16px 34px rgb(0 0 0 / 28%);
+    border-color: var(--color-accent-border);
+    box-shadow: var(--shadow-overlay);
   }
 
   .workout-card:active {
@@ -194,14 +233,14 @@ summary {
 
   .workout-order {
     color: var(--accent);
-    text-shadow: 0 0 18px rgb(199 255 87 / 24%);
+    text-shadow: var(--shadow-accent-text);
   }
 
   .reference-panel {
     border: 1px solid var(--border-subtle);
     border-left: 2px solid var(--accent);
-    border-radius: 16px;
-    background: linear-gradient(145deg, #171b12, #10110e);
+    border-radius: var(--radius-md);
+    background: linear-gradient(145deg, var(--color-surface-raised), var(--color-surface-base));
     box-shadow: inset 0 1px rgb(255 255 255 / 3%);
   }
 
@@ -209,14 +248,14 @@ summary {
     border-color: var(--border-subtle);
     background: var(--surface);
     transition:
-      background-color 140ms,
-      border-color 140ms,
-      box-shadow 140ms;
+      background-color var(--motion-fast),
+      border-color var(--motion-fast),
+      box-shadow var(--motion-fast);
   }
 
   .series-card--done {
-    border-color: rgb(199 255 87 / 48%);
-    background: linear-gradient(135deg, rgb(199 255 87 / 9%), var(--surface));
+    border-color: var(--color-accent-border-strong);
+    background: linear-gradient(135deg, var(--color-accent-soft), var(--surface));
     box-shadow: inset 3px 0 var(--accent);
   }
 
@@ -225,35 +264,35 @@ summary {
   }
 
   .progress-pill {
-    border: 1px solid rgb(199 255 87 / 28%);
-    background: rgb(199 255 87 / 9%);
+    border: 1px solid var(--color-accent-border-soft);
+    background: var(--color-accent-soft);
     color: var(--accent);
   }
 
   .rir-chip {
-    border-color: #3d4336;
-    color: #d6dacd;
+    border-color: var(--color-border-strong);
+    color: var(--color-text-secondary);
     transition:
-      background-color 140ms,
-      border-color 140ms,
-      color 140ms,
-      transform 140ms;
+      background-color var(--motion-fast),
+      border-color var(--motion-fast),
+      color var(--motion-fast),
+      transform var(--motion-fast);
   }
 
   .rir-chip--selected {
     border-color: var(--accent);
     background: var(--accent);
     color: var(--accent-ink);
-    box-shadow: 0 5px 16px rgb(199 255 87 / 20%);
+    box-shadow: var(--shadow-accent-compact);
   }
 
   .exercise-step {
     border-color: var(--border-subtle);
-    color: #aeb4a2;
+    color: var(--color-text-tertiary);
   }
 
   .exercise-step--done {
-    border-color: rgb(199 255 87 / 48%);
+    border-color: var(--color-accent-border-strong);
     color: var(--accent);
   }
 
@@ -261,21 +300,46 @@ summary {
     border-color: var(--accent);
     background: var(--accent);
     color: var(--accent-ink);
-    box-shadow: 0 5px 16px rgb(199 255 87 / 22%);
+    box-shadow: var(--shadow-accent-compact);
   }
 
   .number-input,
   .note-input {
-    border-color: #3d4336;
+    border-color: var(--color-border-strong);
     background: var(--surface-raised);
   }
 
-  .number-input:focus,
-  .note-input:focus {
+  .number-input:focus-visible,
+  .note-input:focus-visible {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgb(199 255 87 / 12%);
-    outline: none;
+    box-shadow: 0 0 0 1px var(--color-background);
   }
+
+  .radius-sm { border-radius: var(--radius-sm); }
+  .radius-md { border-radius: var(--radius-md); }
+  .radius-lg { border-radius: var(--radius-lg); }
+  .text-primary { color: var(--color-text-primary); }
+  .text-secondary { color: var(--color-text-secondary); }
+  .text-tertiary { color: var(--color-text-tertiary); }
+  .border-default { border-color: var(--color-border); }
+  .border-subtle { border-color: var(--color-border-subtle); }
+  .border-strong { border-color: var(--color-border-strong); }
+  .surface-overlay { background: var(--color-surface-overlay); }
+
+  .loading-spinner {
+    display: inline-block;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: var(--radius-full);
+    animation: spin var(--motion-standard) linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Deixa o formulário livre de barras sobrepostas durante a digitação. */
